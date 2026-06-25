@@ -7,16 +7,16 @@
 -- Roles: super_admin | admin | approver | officer | auditor | uploader | citizen
 -- ============================================================
 
-USE master;
-GO
+--USE master;
+--GO
 
-IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'legal_pdf_db')
-    CREATE DATABASE legal_pdf_db
-        COLLATE SQL_Latin1_General_CP1_CI_AS;
-GO
+--IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'legal_pdf_db')
+--    CREATE DATABASE legal_pdf_db
+--        COLLATE SQL_Latin1_General_CP1_CI_AS;
+--GO
 
-USE legal_pdf_db;
-GO
+--USE legal_pdf_db;
+--GO
 
 -- ─────────────────────────────────────────────
 -- TABLES

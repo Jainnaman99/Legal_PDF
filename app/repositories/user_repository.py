@@ -5,6 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.interfaces.user_repository import IUserRepository
+from app.models.department import Department
 from app.models.role import Role
 from app.models.user import User
 
@@ -44,19 +45,22 @@ class UserRepository(IUserRepository):
         email: str,
         hashed_password: str,
         role_id: Optional[int] = None,
+        department_id: Optional[int] = None,
     ) -> User:
         try:
             result = self._db.execute(
                 text(
                     "EXEC sp_create_user "
                     "@username = :username, @email = :email, "
-                    "@hashed_password = :hashed_password, @role_id = :role_id"
+                    "@hashed_password = :hashed_password, "
+                    "@role_id = :role_id, @department_id = :department_id"
                 ),
                 {
                     "username": username,
                     "email": email,
                     "hashed_password": hashed_password,
                     "role_id": role_id,
+                    "department_id": department_id,
                 },
             )
             row = result.mappings().fetchone()
@@ -80,20 +84,28 @@ class UserRepository(IUserRepository):
 
     @staticmethod
     def _map_row(row) -> User:
+        row_dict = dict(row)
         user = User(
-            id=row["id"],
-            username=row["username"],
-            email=row["email"],
-            hashed_password=row["hashed_password"],
-            is_active=bool(row["is_active"]),
-            role_id=row["role_id"],
-            created_at=row["created_at"],
-            updated_at=row["updated_at"],
+            id=row_dict["id"],
+            username=row_dict["username"],
+            email=row_dict["email"],
+            hashed_password=row_dict["hashed_password"],
+            is_active=bool(row_dict["is_active"]),
+            role_id=row_dict.get("role_id"),
+            department_id=row_dict.get("department_id"),
+            created_at=row_dict["created_at"],
+            updated_at=row_dict["updated_at"],
         )
-        if row["role_id"]:
+        if row_dict.get("role_id"):
             user.role = Role(
-                id=row["role_id"],
-                name=row["role_name"],
-                description=row["role_description"],
+                id=row_dict["role_id"],
+                name=row_dict["role_name"],
+                description=row_dict["role_description"],
+            )
+        if row_dict.get("department_id"):
+            user.department = Department(
+                id=row_dict["department_id"],
+                name=row_dict["department_name"],
+                description=row_dict["department_description"],
             )
         return user

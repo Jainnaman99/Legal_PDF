@@ -13,8 +13,8 @@
 -- Or open in SSMS and execute.
 -- ============================================================
 
-USE legal_pdf_db;
-GO
+--USE legal_pdf_db;
+--GO
 
 -- ─────────────────────────────────────────────
 -- TABLE: pdf_pages  (one row per page per PDF)

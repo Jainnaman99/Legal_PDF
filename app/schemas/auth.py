@@ -21,12 +21,21 @@ class RoleOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class DepartmentOut(BaseModel):
+    id: int
+    name: str
+    description: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
 class UserOut(BaseModel):
     id: int
     username: str
     email: str
     is_active: bool
     role: Optional[RoleOut] = None
+    department: Optional[DepartmentOut] = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -37,3 +46,9 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
     role_id: Optional[int] = None
+    department_id: Optional[int] = None
+
+
+class DepartmentCreate(BaseModel):
+    name: str
+    description: Optional[str] = None

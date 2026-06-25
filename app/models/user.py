@@ -14,6 +14,7 @@ class User(Base):
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     role_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("roles.id"), nullable=True)
+    department_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("departments.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
@@ -24,4 +25,5 @@ class User(Base):
     )
 
     role: Mapped["Role | None"] = relationship("Role", back_populates="users")
+    department: Mapped["Department | None"] = relationship("Department", back_populates="users")
     pdf_documents: Mapped[list["PDFDocument"]] = relationship("PDFDocument", back_populates="uploaded_by_user")

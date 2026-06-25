@@ -14,7 +14,7 @@ def register(
     service: AuthService = Depends(get_auth_service),
 ):
     try:
-        user = service.register(body.username, body.email, body.password, body.role_id)
+        user = service.register(body.username, body.email, body.password, body.role_id, body.department_id)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     return user
