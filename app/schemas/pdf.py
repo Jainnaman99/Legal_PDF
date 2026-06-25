@@ -1,6 +1,8 @@
-from datetime import datetime
+from datetime import datetime, date
 from typing import Optional
 from pydantic import BaseModel
+
+from app.schemas.tag import TagRef
 
 
 class PDFUploadResponse(BaseModel):
@@ -8,6 +10,16 @@ class PDFUploadResponse(BaseModel):
     filename: str
     original_filename: str
     file_size: int
+    act_name: Optional[str] = None
+    gazette_reference: Optional[str] = None
+    issuing_authority: Optional[str] = None
+    enactment_date: Optional[date] = None
+    version_no: Optional[str] = None
+    department_id: Optional[int] = None
+    department_name: Optional[str] = None
+    document_type_id: Optional[int] = None
+    document_type_name: Optional[str] = None
+    tags: list[TagRef] = []
     description: Optional[str] = None
     uploaded_by: int
     created_at: datetime
@@ -19,6 +31,16 @@ class PDFListItem(BaseModel):
     id: int
     original_filename: str
     file_size: int
+    act_name: Optional[str] = None
+    gazette_reference: Optional[str] = None
+    issuing_authority: Optional[str] = None
+    enactment_date: Optional[date] = None
+    version_no: Optional[str] = None
+    department_id: Optional[int] = None
+    department_name: Optional[str] = None
+    document_type_id: Optional[int] = None
+    document_type_name: Optional[str] = None
+    tags: list[TagRef] = []
     description: Optional[str] = None
     uploaded_by: int
     created_at: datetime

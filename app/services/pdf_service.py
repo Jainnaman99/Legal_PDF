@@ -1,5 +1,6 @@
 import os
 import uuid
+from datetime import date
 from typing import Optional
 
 from fastapi import UploadFile
@@ -7,6 +8,7 @@ from fastapi import UploadFile
 from app.core.config import settings
 from app.interfaces.pdf_page_repository import IPDFPageRepository
 from app.interfaces.pdf_repository import IPDFRepository
+from app.interfaces.tag_repository import ITagRepository
 from app.models.pdf_document import PDFDocument
 from app.services.pdf_extractor import extract_pages
 from app.utils.text_utils import prepare_fts_query, build_snippet
@@ -14,14 +16,28 @@ from app.utils.text_utils import prepare_fts_query, build_snippet
 
 class PDFService:
 
-    def __init__(self, pdf_repo: IPDFRepository, page_repo: IPDFPageRepository):
+    def __init__(
+        self,
+        pdf_repo: IPDFRepository,
+        page_repo: IPDFPageRepository,
+        tag_repo: ITagRepository,
+    ):
         self._pdf_repo = pdf_repo
         self._page_repo = page_repo
+        self._tag_repo = tag_repo
 
     async def upload(
         self,
         file: UploadFile,
         user_id: int,
+        act_name: Optional[str] = None,
+        gazette_reference: Optional[str] = None,
+        issuing_authority: Optional[str] = None,
+        enactment_date: Optional[date] = None,
+        version_no: Optional[str] = "1.0",
+        department_id: Optional[int] = None,
+        document_type_id: Optional[int] = None,
+        tag_ids: Optional[list[int]] = None,
         description: Optional[str] = None,
     ) -> PDFDocument:
         os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
@@ -39,15 +55,26 @@ class PDFService:
             file_path=file_path,
             file_size=len(content),
             uploaded_by=user_id,
+            act_name=act_name,
+            gazette_reference=gazette_reference,
+            issuing_authority=issuing_authority,
+            enactment_date=enactment_date,
+            version_no=version_no,
+            department_id=department_id,
+            document_type_id=document_type_id,
             description=description,
         )
+
+        if tag_ids:
+            self._tag_repo.save_document_tags(doc.id, tag_ids)
+            doc.tags = [t for t in self._tag_repo.list_all() if t.id in tag_ids]
 
         try:
             pages = [(num, txt) for num, txt in extract_pages(file_path) if txt.strip()]
             if pages:
                 self._page_repo.save_pages(doc.id, pages)
         except Exception:
-            pass  # upload still succeeds even if text extraction fails
+            pass
 
         return doc
 

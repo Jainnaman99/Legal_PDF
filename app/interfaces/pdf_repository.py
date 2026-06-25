@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from datetime import date
 from typing import Optional
 
 from app.models.pdf_document import PDFDocument
@@ -14,6 +15,13 @@ class IPDFRepository(ABC):
         file_path: str,
         file_size: int,
         uploaded_by: int,
+        act_name: Optional[str] = None,
+        gazette_reference: Optional[str] = None,
+        issuing_authority: Optional[str] = None,
+        enactment_date: Optional[date] = None,
+        version_no: Optional[str] = "1.0",
+        department_id: Optional[int] = None,
+        document_type_id: Optional[int] = None,
         description: Optional[str] = None,
     ) -> PDFDocument:
         ...

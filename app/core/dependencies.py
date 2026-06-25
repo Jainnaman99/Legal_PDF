@@ -4,17 +4,21 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.interfaces.department_repository import IDepartmentRepository
+from app.interfaces.document_type_repository import IDocumentTypeRepository
 from app.interfaces.login_log_repository import ILoginLogRepository
 from app.interfaces.pdf_page_repository import IPDFPageRepository
 from app.interfaces.pdf_repository import IPDFRepository
 from app.interfaces.role_repository import IRoleRepository
+from app.interfaces.tag_repository import ITagRepository
 from app.interfaces.user_repository import IUserRepository
 from app.models.user import User
 from app.repositories.department_repository import DepartmentRepository
+from app.repositories.document_type_repository import DocumentTypeRepository
 from app.repositories.login_log_repository import LoginLogRepository
 from app.repositories.pdf_page_repository import PDFPageRepository
 from app.repositories.pdf_repository import PDFRepository
 from app.repositories.role_repository import RoleRepository
+from app.repositories.tag_repository import TagRepository
 from app.repositories.user_repository import UserRepository
 from app.services.auth_service import AuthService
 from app.services.department_service import DepartmentService
@@ -51,11 +55,20 @@ def get_auth_service(
     return AuthService(repo, log_repo)
 
 
+def get_document_type_repository(db: Session = Depends(get_db)) -> IDocumentTypeRepository:
+    return DocumentTypeRepository(db)
+
+
+def get_tag_repository(db: Session = Depends(get_db)) -> ITagRepository:
+    return TagRepository(db)
+
+
 def get_pdf_service(
     repo: IPDFRepository = Depends(get_pdf_repository),
     page_repo: IPDFPageRepository = Depends(get_pdf_page_repository),
+    tag_repo: ITagRepository = Depends(get_tag_repository),
 ) -> PDFService:
-    return PDFService(repo, page_repo)
+    return PDFService(repo, page_repo, tag_repo)
 
 
 def get_role_repository(db: Session = Depends(get_db)) -> IRoleRepository:

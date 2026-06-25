@@ -1,3 +1,4 @@
+from datetime import date
 from typing import Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
@@ -15,6 +16,14 @@ ALLOWED_CONTENT_TYPES = {"application/pdf"}
 @router.post("/upload", response_model=PDFUploadResponse, status_code=status.HTTP_201_CREATED)
 async def upload_pdf(
     file: UploadFile = File(...),
+    act_name: str = Form(...),
+    gazette_reference: str = Form(...),
+    issuing_authority: str = Form(...),
+    enactment_date: date = Form(...),
+    version_no: Optional[str] = Form("1.0"),
+    department_id: Optional[int] = Form(None),
+    document_type_id: Optional[int] = Form(None),
+    tag_ids: Optional[str] = Form(None, description="Comma-separated tag IDs e.g. 1,3,5"),
     description: Optional[str] = Form(None),
     current_user: User = Depends(get_current_user),
     service: PDFService = Depends(get_pdf_service),
@@ -24,7 +33,29 @@ async def upload_pdf(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Only PDF files are allowed",
         )
-    return await service.upload(file, current_user.id, description)
+    parsed_tag_ids: Optional[list[int]] = None
+    if tag_ids:
+        try:
+            parsed_tag_ids = [int(t.strip()) for t in tag_ids.split(",") if t.strip()]
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="tag_ids must be comma-separated integers",
+            )
+
+    return await service.upload(
+        file=file,
+        user_id=current_user.id,
+        act_name=act_name,
+        gazette_reference=gazette_reference,
+        issuing_authority=issuing_authority,
+        enactment_date=enactment_date,
+        version_no=version_no,
+        department_id=department_id,
+        document_type_id=document_type_id,
+        tag_ids=parsed_tag_ids,
+        description=description,
+    )
 
 
 @router.get("/search", response_model=SearchResponse)
