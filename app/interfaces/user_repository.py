@@ -24,6 +24,8 @@ class IUserRepository(ABC):
         username: str,
         email: str,
         hashed_password: str,
+        first_name: Optional[str] = None,
+        last_name: Optional[str] = None,
         role_id: Optional[int] = None,
         department_id: Optional[int] = None,
     ) -> User:

@@ -44,6 +44,8 @@ class UserRepository(IUserRepository):
         username: str,
         email: str,
         hashed_password: str,
+        first_name: Optional[str] = None,
+        last_name: Optional[str] = None,
         role_id: Optional[int] = None,
         department_id: Optional[int] = None,
     ) -> User:
@@ -53,12 +55,15 @@ class UserRepository(IUserRepository):
                     "EXEC sp_create_user "
                     "@username = :username, @email = :email, "
                     "@hashed_password = :hashed_password, "
+                    "@first_name = :first_name, @last_name = :last_name, "
                     "@role_id = :role_id, @department_id = :department_id"
                 ),
                 {
                     "username": username,
                     "email": email,
                     "hashed_password": hashed_password,
+                    "first_name": first_name,
+                    "last_name": last_name,
                     "role_id": role_id,
                     "department_id": department_id,
                 },
@@ -91,11 +96,14 @@ class UserRepository(IUserRepository):
             email=row_dict["email"],
             hashed_password=row_dict["hashed_password"],
             is_active=bool(row_dict["is_active"]),
+            first_name=row_dict.get("first_name"),
+            last_name=row_dict.get("last_name"),
             role_id=row_dict.get("role_id"),
             department_id=row_dict.get("department_id"),
             created_at=row_dict["created_at"],
             updated_at=row_dict["updated_at"],
         )
+        user.last_login = row_dict.get("last_login")
         if row_dict.get("role_id"):
             user.role = Role(
                 id=row_dict["role_id"],

@@ -4,12 +4,14 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.interfaces.department_repository import IDepartmentRepository
+from app.interfaces.login_log_repository import ILoginLogRepository
 from app.interfaces.pdf_page_repository import IPDFPageRepository
 from app.interfaces.pdf_repository import IPDFRepository
 from app.interfaces.role_repository import IRoleRepository
 from app.interfaces.user_repository import IUserRepository
 from app.models.user import User
 from app.repositories.department_repository import DepartmentRepository
+from app.repositories.login_log_repository import LoginLogRepository
 from app.repositories.pdf_page_repository import PDFPageRepository
 from app.repositories.pdf_repository import PDFRepository
 from app.repositories.role_repository import RoleRepository
@@ -38,8 +40,15 @@ def get_department_repository(db: Session = Depends(get_db)) -> IDepartmentRepos
     return DepartmentRepository(db)
 
 
-def get_auth_service(repo: IUserRepository = Depends(get_user_repository)) -> AuthService:
-    return AuthService(repo)
+def get_login_log_repository(db: Session = Depends(get_db)) -> ILoginLogRepository:
+    return LoginLogRepository(db)
+
+
+def get_auth_service(
+    repo: IUserRepository = Depends(get_user_repository),
+    log_repo: ILoginLogRepository = Depends(get_login_log_repository),
+) -> AuthService:
+    return AuthService(repo, log_repo)
 
 
 def get_pdf_service(

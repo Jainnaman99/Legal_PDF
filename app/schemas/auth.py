@@ -33,10 +33,13 @@ class UserOut(BaseModel):
     id: int
     username: str
     email: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
     is_active: bool
     role: Optional[RoleOut] = None
     department: Optional[DepartmentOut] = None
     created_at: datetime
+    last_login: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
 
@@ -45,6 +48,8 @@ class UserCreate(BaseModel):
     username: str
     email: EmailStr
     password: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
     role_id: Optional[int] = None
     department_id: Optional[int] = None
 
