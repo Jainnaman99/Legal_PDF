@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from app.core.dependencies import get_user_repository, require_roles
 from app.interfaces.user_repository import IUserRepository
 from app.models.user import User
-from app.schemas.auth import UserOut
+from app.schemas.auth import UserOut, UserUpdate
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -27,6 +27,29 @@ def get_user(
     repo: IUserRepository = Depends(get_user_repository),
 ):
     user = repo.get_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    return user
+
+
+@router.patch("/", response_model=UserOut)
+def update_user(
+    body: UserUpdate,
+    current_user: User = Depends(_admin_only),
+    repo: IUserRepository = Depends(get_user_repository),
+):
+    try:
+        user = repo.update(
+            body.user_id,
+            first_name=body.first_name,
+            last_name=body.last_name,
+            email=body.email,
+            is_active=body.is_active,
+            role_id=body.role_id,
+            department_id=body.department_id,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return user

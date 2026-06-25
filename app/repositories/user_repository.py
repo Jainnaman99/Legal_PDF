@@ -80,6 +80,45 @@ class UserRepository(IUserRepository):
                 raise ValueError("Email is already registered")
             raise ValueError("A user with this username or email already exists")
 
+    def update(
+        self,
+        user_id: int,
+        first_name: Optional[str] = None,
+        last_name: Optional[str] = None,
+        email: Optional[str] = None,
+        is_active: Optional[bool] = None,
+        role_id: Optional[int] = None,
+        department_id: Optional[int] = None,
+    ) -> Optional[User]:
+        try:
+            result = self._db.execute(
+                text(
+                    "EXEC sp_update_user "
+                    "@user_id = :user_id, @first_name = :first_name, "
+                    "@last_name = :last_name, @email = :email, "
+                    "@is_active = :is_active, @role_id = :role_id, "
+                    "@department_id = :department_id"
+                ),
+                {
+                    "user_id": user_id,
+                    "first_name": first_name,
+                    "last_name": last_name,
+                    "email": email,
+                    "is_active": is_active,
+                    "role_id": role_id,
+                    "department_id": department_id,
+                },
+            )
+            row = result.mappings().fetchone()
+            self._db.commit()
+            return self._map_row(row) if row else None
+        except IntegrityError as e:
+            self._db.rollback()
+            err = str(e.orig).lower()
+            if "uq_users_email" in err:
+                raise ValueError("Email is already registered")
+            raise ValueError("Update failed due to a conflict")
+
     def list_all(self, skip: int = 0, limit: int = 100, exclude_user_id: Optional[int] = None) -> list[User]:
         result = self._db.execute(
             text(

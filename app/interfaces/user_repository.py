@@ -32,5 +32,18 @@ class IUserRepository(ABC):
         ...
 
     @abstractmethod
+    def update(
+        self,
+        user_id: int,
+        first_name: Optional[str] = None,
+        last_name: Optional[str] = None,
+        email: Optional[str] = None,
+        is_active: Optional[bool] = None,
+        role_id: Optional[int] = None,
+        department_id: Optional[int] = None,
+    ) -> Optional[User]:
+        ...
+
+    @abstractmethod
     def list_all(self, skip: int = 0, limit: int = 100, exclude_user_id: Optional[int] = None) -> list[User]:
         ...

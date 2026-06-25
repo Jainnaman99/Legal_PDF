@@ -54,6 +54,16 @@ class UserCreate(BaseModel):
     department_id: Optional[int] = None
 
 
+class UserUpdate(BaseModel):
+    user_id: int
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    is_active: Optional[bool] = None
+    role_id: Optional[int] = None
+    department_id: Optional[int] = None
+
+
 class DepartmentCreate(BaseModel):
     name: str
     description: Optional[str] = None
