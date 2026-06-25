@@ -80,10 +80,13 @@ class UserRepository(IUserRepository):
                 raise ValueError("Email is already registered")
             raise ValueError("A user with this username or email already exists")
 
-    def list_all(self, skip: int = 0, limit: int = 100) -> list[User]:
+    def list_all(self, skip: int = 0, limit: int = 100, exclude_user_id: Optional[int] = None) -> list[User]:
         result = self._db.execute(
-            text("EXEC sp_list_users @skip = :skip, @limit = :limit"),
-            {"skip": skip, "limit": limit},
+            text(
+                "EXEC sp_list_users @skip = :skip, @limit = :limit, "
+                "@exclude_user_id = :exclude_user_id"
+            ),
+            {"skip": skip, "limit": limit, "exclude_user_id": exclude_user_id},
         )
         return [self._map_row(row) for row in result.mappings().fetchall()]
 

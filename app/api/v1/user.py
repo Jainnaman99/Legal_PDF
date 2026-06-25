@@ -17,7 +17,7 @@ def list_users(
     current_user: User = Depends(_admin_only),
     repo: IUserRepository = Depends(get_user_repository),
 ):
-    return repo.list_all(skip, limit)
+    return repo.list_all(skip, limit, exclude_user_id=current_user.id)
 
 
 @router.get("/{user_id}", response_model=UserOut)
