@@ -122,7 +122,7 @@ class PDFService:
             row["snippet"] = build_snippet(row["page_text"], query)
         return rows
 
-    def list_my_documents(self, user_id: int, skip: int = 0, limit: int = 100) -> list[PDFDocument]:
+    def list_my_documents(self, user_id: int, skip: int = 0, limit: int = 100) -> tuple[int, list[PDFDocument]]:
         return self._pdf_repo.list_by_user(user_id, skip, limit)
 
     def list_all_documents(self, skip: int = 0, limit: int = 100) -> list[PDFDocument]:

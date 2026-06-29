@@ -6,6 +6,7 @@ from app.schemas.pdf import (
     FileUploadResponse,
     PDFCreateRequest,
     PDFListItem,
+    PDFListResponse,
     PDFUploadResponse,
     SearchResponse,
     SearchResultItem,
@@ -97,14 +98,15 @@ def search_pdfs(
     return SearchResponse(query=q, total=len(results), results=results)
 
 
-@router.get("/my-documents", response_model=list[PDFListItem])
+@router.get("/my-documents", response_model=PDFListResponse)
 def list_my_documents(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_user),
     service: PDFService = Depends(get_pdf_service),
 ):
-    return service.list_my_documents(current_user.id, skip, limit)
+    total, documents = service.list_my_documents(current_user.id, skip, limit)
+    return PDFListResponse(total=total, documents=documents)
 
 
 @router.get("/all", response_model=list[PDFListItem])

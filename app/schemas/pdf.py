@@ -128,6 +128,11 @@ class PDFListItem(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class PDFListResponse(BaseModel):
+    total: int
+    documents: list[PDFListItem]
+
+
 class SearchResultItem(BaseModel):
     pdf_id: int
     original_filename: str

@@ -91,12 +91,14 @@ class PDFRepository(IPDFRepository):
         row = result.mappings().fetchone()
         return self._map_row(row) if row else None
 
-    def list_by_user(self, user_id: int, skip: int = 0, limit: int = 100) -> list[PDFDocument]:
+    def list_by_user(self, user_id: int, skip: int = 0, limit: int = 100) -> tuple[int, list[PDFDocument]]:
         result = self._db.execute(
             text("EXEC sp_list_pdfs_by_user @user_id = :user_id, @skip = :skip, @limit = :limit"),
             {"user_id": user_id, "skip": skip, "limit": limit},
         )
-        return [self._map_row(row) for row in result.mappings().fetchall()]
+        rows = result.mappings().fetchall()
+        total = rows[0]["total_count"] if rows else 0
+        return total, [self._map_row(row) for row in rows]
 
     def list_all(self, skip: int = 0, limit: int = 100) -> list[PDFDocument]:
         result = self._db.execute(
