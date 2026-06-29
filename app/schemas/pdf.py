@@ -154,6 +154,19 @@ class PDFListResponse(BaseModel):
     documents: list[PDFListItem]
 
 
+class ActNameItem(BaseModel):
+    id: int
+    document_name: str
+    reference_number: Optional[str] = None
+    status: str
+
+
+class ActNameSearchResponse(BaseModel):
+    query: str
+    total: int
+    results: list[ActNameItem]
+
+
 class SearchResultItem(BaseModel):
     pdf_id: int
     original_filename: str

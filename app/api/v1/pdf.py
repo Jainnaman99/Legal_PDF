@@ -5,6 +5,8 @@ from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, 
 from app.core.dependencies import get_current_user, get_pdf_service, require_roles
 from app.models.user import User
 from app.schemas.pdf import (
+    ActNameItem,
+    ActNameSearchResponse,
     FileUploadResponse,
     PDFCreateRequest,
     PDFListResponse,
@@ -113,6 +115,26 @@ def review_document(
     if not doc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
     return doc
+
+
+@router.get("/search-acts", response_model=ActNameSearchResponse, summary="Autocomplete — search Act names by keyword")
+def search_act_names(
+    text: str = Query(..., min_length=1, description="Keyword to match against Act document names"),
+    limit: int = Query(20, ge=1, le=100),
+    current_user: User = Depends(get_current_user),
+    service: PDFService = Depends(get_pdf_service),
+):
+    rows = service.search_act_names(text, limit)
+    results = [
+        ActNameItem(
+            id=r["id"],
+            document_name=r["document_name"],
+            reference_number=r.get("reference_number"),
+            status=r["status"],
+        )
+        for r in rows
+    ]
+    return ActNameSearchResponse(query=text, total=len(results), results=results)
 
 
 @router.get("/search", response_model=SearchResponse)

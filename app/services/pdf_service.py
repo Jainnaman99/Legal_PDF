@@ -118,6 +118,9 @@ class PDFService:
 
         return doc
 
+    def search_act_names(self, q: str, limit: int = 20) -> list[dict]:
+        return self._pdf_repo.search_act_names(q, limit)
+
     def search(self, query: str, skip: int = 0, limit: int = 20) -> list[dict]:
         fts_term = prepare_fts_query(query)
         rows = self._page_repo.search(fts_term, skip, limit)

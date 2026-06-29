@@ -53,3 +53,7 @@ class IPDFRepository(ABC):
     @abstractmethod
     def save_relationships(self, pdf_id: int, relationships: list[dict]) -> None:
         ...
+
+    @abstractmethod
+    def search_act_names(self, q: str, limit: int = 20) -> list[dict]:
+        ...
