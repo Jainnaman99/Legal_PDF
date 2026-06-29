@@ -118,6 +118,7 @@ class PDFUploadResponse(BaseModel):
 class PDFListItem(BaseModel):
     id: int
     original_filename: str
+    file_path: Optional[str] = None
     file_size: int
     status: str = "pending"
 

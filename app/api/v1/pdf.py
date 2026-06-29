@@ -117,6 +117,27 @@ def review_document(
     return doc
 
 
+@router.get(
+    "/approver/documents",
+    response_model=PDFListResponse,
+    summary="Approver — list all documents with optional status filter",
+)
+def list_documents_for_approver(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    status: Optional[str] = Query(None, description="Filter by status: pending | approved | rejected"),
+    current_user: User = Depends(_approver_roles),
+    service: PDFService = Depends(get_pdf_service),
+):
+    if status and status not in ("pending", "approved", "rejected"):
+        raise HTTPException(
+            status_code=400,
+            detail="status must be one of: pending, approved, rejected",
+        )
+    total, documents = service.list_all_documents(skip, limit, status)
+    return PDFListResponse(total=total, documents=documents)
+
+
 VALID_DOCUMENT_TYPES = {"Act", "Amendment", "Notification", "Circular", "Policy", "Rules & Regulations", "Order/Gazette"}
 
 
