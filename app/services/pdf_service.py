@@ -139,6 +139,9 @@ class PDFService:
             raise ValueError("action must be 'approved' or 'rejected'")
         return self._approval_repo.review(pdf_id, approver_id, action, comments)
 
+    def get_by_id(self, document_id: int) -> Optional[PDFDocument]:
+        return self._pdf_repo.get_by_id(document_id)
+
     def get_pending(self, skip: int = 0, limit: int = 100) -> tuple[int, list[PDFDocument]]:
         return self._pdf_repo.get_pending(skip, limit)
 

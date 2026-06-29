@@ -1,7 +1,10 @@
+import os
 from typing import Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi.responses import FileResponse
 
+from app.core.config import settings
 from app.core.dependencies import get_current_user, get_pdf_service, require_roles
 from app.models.user import User
 from app.schemas.pdf import (
@@ -216,3 +219,24 @@ def list_all_documents(
         )
     total, documents = service.list_all_documents(skip, limit, status)
     return PDFListResponse(total=total, documents=documents)
+
+
+@router.get("/{document_id}/file", summary="Stream the original PDF file")
+def get_pdf_file(
+    document_id: int,
+    current_user: User = Depends(get_current_user),
+    service: PDFService = Depends(get_pdf_service),
+):
+    doc = service.get_by_id(document_id)
+    if not doc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+    fp = doc.file_path if os.path.isabs(doc.file_path) else os.path.join(
+        settings.UPLOAD_DIR, os.path.basename(doc.file_path)
+    )
+    if not os.path.exists(fp):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found on server")
+    return FileResponse(
+        fp,
+        media_type="application/pdf",
+        filename=doc.original_filename or "document.pdf",
+    )
