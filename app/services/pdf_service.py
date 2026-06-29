@@ -6,6 +6,7 @@ from typing import Optional
 from fastapi import UploadFile
 
 from app.core.config import settings
+from app.interfaces.pdf_approval_repository import IPDFApprovalRepository
 from app.interfaces.pdf_page_repository import IPDFPageRepository
 from app.interfaces.pdf_repository import IPDFRepository
 from app.interfaces.tag_repository import ITagRepository
@@ -22,10 +23,12 @@ class PDFService:
         pdf_repo: IPDFRepository,
         page_repo: IPDFPageRepository,
         tag_repo: ITagRepository,
+        approval_repo: IPDFApprovalRepository,
     ):
         self._pdf_repo = pdf_repo
         self._page_repo = page_repo
         self._tag_repo = tag_repo
+        self._approval_repo = approval_repo
 
     async def store_file(self, file: UploadFile) -> FileUploadResponse:
         os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
@@ -122,8 +125,22 @@ class PDFService:
             row["snippet"] = build_snippet(row["page_text"], query)
         return rows
 
+    def review_document(
+        self,
+        pdf_id: int,
+        approver_id: int,
+        action: str,
+        comments: Optional[str] = None,
+    ) -> Optional[PDFDocument]:
+        if action not in ("approved", "rejected"):
+            raise ValueError("action must be 'approved' or 'rejected'")
+        return self._approval_repo.review(pdf_id, approver_id, action, comments)
+
+    def get_pending(self, skip: int = 0, limit: int = 100) -> tuple[int, list[PDFDocument]]:
+        return self._pdf_repo.get_pending(skip, limit)
+
     def list_my_documents(self, user_id: int, skip: int = 0, limit: int = 100) -> tuple[int, list[PDFDocument]]:
         return self._pdf_repo.list_by_user(user_id, skip, limit)
 
-    def list_all_documents(self, skip: int = 0, limit: int = 100) -> list[PDFDocument]:
-        return self._pdf_repo.list_all(skip, limit)
+    def list_all_documents(self, skip: int = 0, limit: int = 100, status: Optional[str] = None) -> tuple[int, list[PDFDocument]]:
+        return self._pdf_repo.list_all(skip, limit, status)

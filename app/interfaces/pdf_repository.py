@@ -43,7 +43,11 @@ class IPDFRepository(ABC):
         ...
 
     @abstractmethod
-    def list_all(self, skip: int = 0, limit: int = 100) -> list[PDFDocument]:
+    def list_all(self, skip: int = 0, limit: int = 100, status: Optional[str] = None) -> tuple[int, list[PDFDocument]]:
+        ...
+
+    @abstractmethod
+    def get_pending(self, skip: int = 0, limit: int = 100) -> tuple[int, list[PDFDocument]]:
         ...
 
     @abstractmethod

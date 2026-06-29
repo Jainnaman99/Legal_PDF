@@ -13,6 +13,23 @@ class FileUploadResponse(BaseModel):
     file_size: int
 
 
+# ── Approval ─────────────────────────────────────────────────
+
+class ApprovalInfo(BaseModel):
+    action: str
+    comments: Optional[str] = None
+    acted_at: datetime
+    approver_username: str
+    approver_first_name: Optional[str] = None
+    approver_last_name: Optional[str] = None
+
+
+class PDFReviewRequest(BaseModel):
+    pdf_id: int
+    action: str                  # 'approved' | 'rejected'
+    comments: Optional[str] = None
+
+
 # ── Relationships ────────────────────────────────────────────
 
 class RelationshipInput(BaseModel):
@@ -68,6 +85,7 @@ class PDFUploadResponse(BaseModel):
     filename: str
     original_filename: str
     file_size: int
+    status: str = "pending"
 
     document_name: Optional[str] = None
     issue_date: Optional[date] = None
@@ -89,6 +107,7 @@ class PDFUploadResponse(BaseModel):
     document_type_name: Optional[str] = None
     tags: list[TagRef] = []
     relationships: list[RelationshipRef] = []
+    latest_approval: Optional[ApprovalInfo] = None
     description: Optional[str] = None
     uploaded_by: int
     created_at: datetime
@@ -100,6 +119,7 @@ class PDFListItem(BaseModel):
     id: int
     original_filename: str
     file_size: int
+    status: str = "pending"
 
     document_name: Optional[str] = None
     issue_date: Optional[date] = None
@@ -121,6 +141,7 @@ class PDFListItem(BaseModel):
     document_type_name: Optional[str] = None
     tags: list[TagRef] = []
     relationships: list[RelationshipRef] = []
+    latest_approval: Optional[ApprovalInfo] = None
     description: Optional[str] = None
     uploaded_by: int
     created_at: datetime

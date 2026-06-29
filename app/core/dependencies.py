@@ -6,6 +6,7 @@ from app.db.session import get_db
 from app.interfaces.department_repository import IDepartmentRepository
 from app.interfaces.document_type_repository import IDocumentTypeRepository
 from app.interfaces.login_log_repository import ILoginLogRepository
+from app.interfaces.pdf_approval_repository import IPDFApprovalRepository
 from app.interfaces.pdf_page_repository import IPDFPageRepository
 from app.interfaces.pdf_repository import IPDFRepository
 from app.interfaces.role_repository import IRoleRepository
@@ -15,6 +16,7 @@ from app.models.user import User
 from app.repositories.department_repository import DepartmentRepository
 from app.repositories.document_type_repository import DocumentTypeRepository
 from app.repositories.login_log_repository import LoginLogRepository
+from app.repositories.pdf_approval_repository import PDFApprovalRepository
 from app.repositories.pdf_page_repository import PDFPageRepository
 from app.repositories.pdf_repository import PDFRepository
 from app.repositories.role_repository import RoleRepository
@@ -63,12 +65,17 @@ def get_tag_repository(db: Session = Depends(get_db)) -> ITagRepository:
     return TagRepository(db)
 
 
+def get_pdf_approval_repository(db: Session = Depends(get_db)) -> IPDFApprovalRepository:
+    return PDFApprovalRepository(db)
+
+
 def get_pdf_service(
     repo: IPDFRepository = Depends(get_pdf_repository),
     page_repo: IPDFPageRepository = Depends(get_pdf_page_repository),
     tag_repo: ITagRepository = Depends(get_tag_repository),
+    approval_repo: IPDFApprovalRepository = Depends(get_pdf_approval_repository),
 ) -> PDFService:
-    return PDFService(repo, page_repo, tag_repo)
+    return PDFService(repo, page_repo, tag_repo, approval_repo)
 
 
 def get_role_repository(db: Session = Depends(get_db)) -> IRoleRepository:

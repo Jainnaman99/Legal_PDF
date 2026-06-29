@@ -1,12 +1,14 @@
+from typing import Optional
+
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 
-from app.core.dependencies import get_current_user, get_pdf_service
+from app.core.dependencies import get_current_user, get_pdf_service, require_roles
 from app.models.user import User
 from app.schemas.pdf import (
     FileUploadResponse,
     PDFCreateRequest,
-    PDFListItem,
     PDFListResponse,
+    PDFReviewRequest,
     PDFUploadResponse,
     SearchResponse,
     SearchResultItem,
@@ -16,6 +18,8 @@ from app.services.pdf_service import PDFService
 router = APIRouter(prefix="/pdf", tags=["PDF Documents"])
 
 ALLOWED_CONTENT_TYPES = {"application/pdf"}
+
+_approver_roles = require_roles("approver", "admin", "super_admin")
 
 
 @router.post(
@@ -48,12 +52,11 @@ def create_document(
     current_user: User = Depends(get_current_user),
     service: PDFService = Depends(get_pdf_service),
 ):
-    department_id = current_user.department_id
     try:
         return service.create_from_ref(
             file_ref=body.file_ref,
             user_id=current_user.id,
-            department_id=department_id,
+            department_id=current_user.department_id,
             document_type_id=body.document_type_id,
             document_name=body.document_name,
             issue_date=body.issue_date,
@@ -74,6 +77,42 @@ def create_document(
         )
     except FileNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.get(
+    "/pending",
+    response_model=PDFListResponse,
+    summary="Approver queue — documents awaiting review",
+)
+def list_pending_documents(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    current_user: User = Depends(_approver_roles),
+    service: PDFService = Depends(get_pdf_service),
+):
+    total, documents = service.get_pending(skip, limit)
+    return PDFListResponse(total=total, documents=documents)
+
+
+@router.post(
+    "/review",
+    response_model=PDFUploadResponse,
+    summary="Approve or reject a document",
+)
+def review_document(
+    body: PDFReviewRequest,
+    current_user: User = Depends(_approver_roles),
+    service: PDFService = Depends(get_pdf_service),
+):
+    if body.action not in ("approved", "rejected"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="action must be 'approved' or 'rejected'",
+        )
+    doc = service.review_document(body.pdf_id, current_user.id, body.action, body.comments)
+    if not doc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+    return doc
 
 
 @router.get("/search", response_model=SearchResponse)
@@ -109,11 +148,18 @@ def list_my_documents(
     return PDFListResponse(total=total, documents=documents)
 
 
-@router.get("/all", response_model=list[PDFListItem])
+@router.get("/all", response_model=PDFListResponse)
 def list_all_documents(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
+    status: Optional[str] = Query(None, description="Filter by status: pending | approved | rejected"),
     current_user: User = Depends(get_current_user),
     service: PDFService = Depends(get_pdf_service),
 ):
-    return service.list_all_documents(skip, limit)
+    if status and status not in ("pending", "approved", "rejected"):
+        raise HTTPException(
+            status_code=400,
+            detail="status must be one of: pending, approved, rejected",
+        )
+    total, documents = service.list_all_documents(skip, limit, status)
+    return PDFListResponse(total=total, documents=documents)

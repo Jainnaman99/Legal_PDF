@@ -42,6 +42,7 @@ class PDFDocument(Base):
     # Rules & Regulations-specific
     rule_making_authority: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
     uploaded_by: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)

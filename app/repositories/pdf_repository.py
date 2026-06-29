@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.interfaces.pdf_repository import IPDFRepository
 from app.models.pdf_document import PDFDocument
-from app.schemas.pdf import RelationshipRef
+from app.schemas.pdf import ApprovalInfo, RelationshipRef
 from app.schemas.tag import TagRef
 
 
@@ -100,12 +100,23 @@ class PDFRepository(IPDFRepository):
         total = rows[0]["total_count"] if rows else 0
         return total, [self._map_row(row) for row in rows]
 
-    def list_all(self, skip: int = 0, limit: int = 100) -> list[PDFDocument]:
+    def list_all(self, skip: int = 0, limit: int = 100, status: Optional[str] = None) -> tuple[int, list[PDFDocument]]:
         result = self._db.execute(
-            text("EXEC sp_list_all_pdfs @skip = :skip, @limit = :limit"),
+            text("EXEC sp_list_all_pdfs @skip = :skip, @limit = :limit, @status = :status"),
+            {"skip": skip, "limit": limit, "status": status},
+        )
+        rows = result.mappings().fetchall()
+        total = rows[0]["total_count"] if rows else 0
+        return total, [self._map_row(row) for row in rows]
+
+    def get_pending(self, skip: int = 0, limit: int = 100) -> tuple[int, list[PDFDocument]]:
+        result = self._db.execute(
+            text("EXEC sp_get_pending_pdfs @skip = :skip, @limit = :limit"),
             {"skip": skip, "limit": limit},
         )
-        return [self._map_row(row) for row in result.mappings().fetchall()]
+        rows = result.mappings().fetchall()
+        total = rows[0]["total_count"] if rows else 0
+        return total, [self._map_row(row) for row in rows]
 
     def save_relationships(self, pdf_id: int, relationships: list[dict]) -> None:
         if not relationships:
@@ -130,6 +141,23 @@ class PDFRepository(IPDFRepository):
                 except ValueError:
                     pass
         return result
+
+    @staticmethod
+    def _parse_approval(approval_json: Optional[str]) -> Optional[ApprovalInfo]:
+        if not approval_json:
+            return None
+        try:
+            d = json.loads(approval_json)
+            return ApprovalInfo(
+                action=d["action"],
+                comments=d.get("comments"),
+                acted_at=d["acted_at"],
+                approver_username=d["approver_username"],
+                approver_first_name=d.get("approver_first_name"),
+                approver_last_name=d.get("approver_last_name"),
+            )
+        except (json.JSONDecodeError, KeyError):
+            return None
 
     @staticmethod
     def _parse_relationships(rels_json: Optional[str]) -> list[RelationshipRef]:
@@ -157,6 +185,7 @@ class PDFRepository(IPDFRepository):
             original_filename=d["original_filename"],
             file_path=d["file_path"],
             file_size=d["file_size"],
+            status=d.get("status", "pending"),
             document_name=d.get("document_name"),
             reference_number=d.get("reference_number"),
             issue_date=d.get("issue_date"),
@@ -180,4 +209,5 @@ class PDFRepository(IPDFRepository):
         doc.document_type_name = d.get("document_type_name")
         doc.tags = PDFRepository._parse_tags(d.get("tags"))
         doc.relationships = PDFRepository._parse_relationships(d.get("relationships"))
+        doc.latest_approval = PDFRepository._parse_approval(d.get("latest_approval"))
         return doc
