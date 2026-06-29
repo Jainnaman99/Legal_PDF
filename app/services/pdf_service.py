@@ -10,7 +10,7 @@ from app.interfaces.pdf_page_repository import IPDFPageRepository
 from app.interfaces.pdf_repository import IPDFRepository
 from app.interfaces.tag_repository import ITagRepository
 from app.models.pdf_document import PDFDocument
-from app.schemas.pdf import FileUploadResponse
+from app.schemas.pdf import FileUploadResponse, RelationshipInput
 from app.services.pdf_extractor import extract_pages
 from app.utils.text_utils import prepare_fts_query, build_snippet
 
@@ -44,19 +44,28 @@ class PDFService:
         self,
         file_ref: str,
         user_id: int,
-        act_name: str,
-        gazette_reference: str,
-        issuing_authority: str,
-        enactment_date: date,
+        department_id: Optional[int],
+        document_type_id: int,
+        document_name: str,
+        issue_date: date,
+        reference_number: Optional[str] = None,
+        effective_from: Optional[date] = None,
+        gazette_reference: Optional[str] = None,
+        legal_authority: Optional[str] = None,
+        short_title: Optional[str] = None,
+        valid_until: Optional[date] = None,
+        sector_domain: Optional[str] = None,
+        implementing_agency: Optional[str] = None,
+        next_review_date: Optional[date] = None,
+        rule_making_authority: Optional[str] = None,
         version_no: Optional[str] = "1.0",
-        department_id: Optional[int] = None,
-        document_type_id: Optional[int] = None,
         tag_ids: Optional[list[int]] = None,
+        relationships: Optional[list[RelationshipInput]] = None,
         description: Optional[str] = None,
     ) -> PDFDocument:
         file_path = os.path.join(settings.UPLOAD_DIR, file_ref)
         if not os.path.exists(file_path):
-            raise FileNotFoundError(f"File reference '{file_ref}' not found")
+            raise FileNotFoundError(f"File reference '{file_ref}' not found. Upload the file first.")
 
         file_size = os.path.getsize(file_path)
         original_filename = "_".join(file_ref.split("_")[1:]) if "_" in file_ref else file_ref
@@ -67,10 +76,18 @@ class PDFService:
             file_path=file_path,
             file_size=file_size,
             uploaded_by=user_id,
-            act_name=act_name,
+            document_name=document_name,
+            reference_number=reference_number,
+            issue_date=issue_date,
+            effective_from=effective_from,
             gazette_reference=gazette_reference,
-            issuing_authority=issuing_authority,
-            enactment_date=enactment_date,
+            legal_authority=legal_authority,
+            short_title=short_title,
+            valid_until=valid_until,
+            sector_domain=sector_domain,
+            implementing_agency=implementing_agency,
+            next_review_date=next_review_date,
+            rule_making_authority=rule_making_authority,
             version_no=version_no,
             department_id=department_id,
             document_type_id=document_type_id,
@@ -81,57 +98,13 @@ class PDFService:
             self._tag_repo.save_document_tags(doc.id, tag_ids)
             doc.tags = [t for t in self._tag_repo.list_all() if t.id in tag_ids]
 
-        try:
-            pages = [(num, txt) for num, txt in extract_pages(file_path) if txt.strip()]
-            if pages:
-                self._page_repo.save_pages(doc.id, pages)
-        except Exception:
-            pass
-
-        return doc
-
-    async def upload(
-        self,
-        file: UploadFile,
-        user_id: int,
-        act_name: Optional[str] = None,
-        gazette_reference: Optional[str] = None,
-        issuing_authority: Optional[str] = None,
-        enactment_date: Optional[date] = None,
-        version_no: Optional[str] = "1.0",
-        department_id: Optional[int] = None,
-        document_type_id: Optional[int] = None,
-        tag_ids: Optional[list[int]] = None,
-        description: Optional[str] = None,
-    ) -> PDFDocument:
-        os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
-
-        unique_name = f"{uuid.uuid4().hex}_{file.filename}"
-        file_path = os.path.join(settings.UPLOAD_DIR, unique_name)
-
-        content = await file.read()
-        with open(file_path, "wb") as f:
-            f.write(content)
-
-        doc = self._pdf_repo.create(
-            filename=unique_name,
-            original_filename=file.filename,
-            file_path=file_path,
-            file_size=len(content),
-            uploaded_by=user_id,
-            act_name=act_name,
-            gazette_reference=gazette_reference,
-            issuing_authority=issuing_authority,
-            enactment_date=enactment_date,
-            version_no=version_no,
-            department_id=department_id,
-            document_type_id=document_type_id,
-            description=description,
-        )
-
-        if tag_ids:
-            self._tag_repo.save_document_tags(doc.id, tag_ids)
-            doc.tags = [t for t in self._tag_repo.list_all() if t.id in tag_ids]
+        if relationships:
+            rels = [{"pdf_id": r.pdf_id, "type": r.type} for r in relationships]
+            self._pdf_repo.save_relationships(doc.id, rels)
+            doc.relationships = [
+                type("R", (), {"pdf_id": r.pdf_id, "document_name": None, "type": r.type})()
+                for r in relationships
+            ]
 
         try:
             pages = [(num, txt) for num, txt in extract_pages(file_path) if txt.strip()]

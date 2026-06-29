@@ -1,5 +1,3 @@
-from typing import Optional
-
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 
 from app.core.dependencies import get_current_user, get_pdf_service
@@ -23,7 +21,7 @@ ALLOWED_CONTENT_TYPES = {"application/pdf"}
     "/upload-file",
     response_model=FileUploadResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Step 1 — Upload the PDF file, get back a file_ref",
+    summary="Step 1 — Upload the PDF binary, receive a file_ref",
 )
 async def upload_file(
     file: UploadFile = File(...),
@@ -49,18 +47,28 @@ def create_document(
     current_user: User = Depends(get_current_user),
     service: PDFService = Depends(get_pdf_service),
 ):
+    department_id = current_user.department_id
     try:
         return service.create_from_ref(
             file_ref=body.file_ref,
             user_id=current_user.id,
-            act_name=body.act_name,
-            gazette_reference=body.gazette_reference,
-            issuing_authority=body.issuing_authority,
-            enactment_date=body.enactment_date,
-            version_no=body.version_no,
-            department_id=body.department_id,
+            department_id=department_id,
             document_type_id=body.document_type_id,
+            document_name=body.document_name,
+            issue_date=body.issue_date,
+            reference_number=body.reference_number,
+            effective_from=body.effective_from,
+            gazette_reference=body.gazette_reference,
+            legal_authority=body.legal_authority,
+            short_title=body.short_title,
+            valid_until=body.valid_until,
+            sector_domain=body.sector_domain,
+            implementing_agency=body.implementing_agency,
+            next_review_date=body.next_review_date,
+            rule_making_authority=body.rule_making_authority,
+            version_no=body.version_no,
             tag_ids=body.tag_ids,
+            relationships=body.relationships,
             description=body.description,
         )
     except FileNotFoundError as e:

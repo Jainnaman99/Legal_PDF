@@ -5,40 +5,90 @@ from pydantic import BaseModel
 from app.schemas.tag import TagRef
 
 
+# ── File upload (Step 1) ─────────────────────────────────────
+
 class FileUploadResponse(BaseModel):
     file_ref: str
     original_filename: str
     file_size: int
 
 
+# ── Relationships ────────────────────────────────────────────
+
+class RelationshipInput(BaseModel):
+    pdf_id: int
+    type: str = "related"   # parent_act | amends | implements | related
+
+
+class RelationshipRef(BaseModel):
+    pdf_id: int
+    document_name: Optional[str] = None
+    type: str
+
+
+# ── Document create request (Step 2) ─────────────────────────
+
 class PDFCreateRequest(BaseModel):
     file_ref: str
-    act_name: str
-    gazette_reference: str
-    issuing_authority: str
-    enactment_date: date
+    document_type_id: int
+    document_name: str
+    issue_date: date
+
+    # Shared optional fields
+    reference_number: Optional[str] = None
+    effective_from: Optional[date] = None
+    gazette_reference: Optional[str] = None
+    legal_authority: Optional[str] = None
     version_no: Optional[str] = "1.0"
-    department_id: Optional[int] = None
-    document_type_id: Optional[int] = None
+
+    # Act-specific
+    short_title: Optional[str] = None
+
+    # Circular-specific
+    valid_until: Optional[date] = None
+
+    # Policy-specific
+    sector_domain: Optional[str] = None
+    implementing_agency: Optional[str] = None
+    next_review_date: Optional[date] = None
+
+    # Rules & Regulations-specific
+    rule_making_authority: Optional[str] = None
+
+    # Common
     tag_ids: Optional[list[int]] = None
+    relationships: Optional[list[RelationshipInput]] = None
     description: Optional[str] = None
 
+
+# ── Responses ────────────────────────────────────────────────
 
 class PDFUploadResponse(BaseModel):
     id: int
     filename: str
     original_filename: str
     file_size: int
-    act_name: Optional[str] = None
+
+    document_name: Optional[str] = None
+    issue_date: Optional[date] = None
+    reference_number: Optional[str] = None
+    effective_from: Optional[date] = None
     gazette_reference: Optional[str] = None
-    issuing_authority: Optional[str] = None
-    enactment_date: Optional[date] = None
+    legal_authority: Optional[str] = None
+    short_title: Optional[str] = None
+    valid_until: Optional[date] = None
+    sector_domain: Optional[str] = None
+    implementing_agency: Optional[str] = None
+    next_review_date: Optional[date] = None
+    rule_making_authority: Optional[str] = None
     version_no: Optional[str] = None
+
     department_id: Optional[int] = None
     department_name: Optional[str] = None
     document_type_id: Optional[int] = None
     document_type_name: Optional[str] = None
     tags: list[TagRef] = []
+    relationships: list[RelationshipRef] = []
     description: Optional[str] = None
     uploaded_by: int
     created_at: datetime
@@ -50,16 +100,27 @@ class PDFListItem(BaseModel):
     id: int
     original_filename: str
     file_size: int
-    act_name: Optional[str] = None
+
+    document_name: Optional[str] = None
+    issue_date: Optional[date] = None
+    reference_number: Optional[str] = None
+    effective_from: Optional[date] = None
     gazette_reference: Optional[str] = None
-    issuing_authority: Optional[str] = None
-    enactment_date: Optional[date] = None
+    legal_authority: Optional[str] = None
+    short_title: Optional[str] = None
+    valid_until: Optional[date] = None
+    sector_domain: Optional[str] = None
+    implementing_agency: Optional[str] = None
+    next_review_date: Optional[date] = None
+    rule_making_authority: Optional[str] = None
     version_no: Optional[str] = None
+
     department_id: Optional[int] = None
     department_name: Optional[str] = None
     document_type_id: Optional[int] = None
     document_type_name: Optional[str] = None
     tags: list[TagRef] = []
+    relationships: list[RelationshipRef] = []
     description: Optional[str] = None
     uploaded_by: int
     created_at: datetime

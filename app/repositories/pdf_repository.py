@@ -1,3 +1,4 @@
+import json
 from datetime import date
 from typing import Optional
 
@@ -6,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.interfaces.pdf_repository import IPDFRepository
 from app.models.pdf_document import PDFDocument
+from app.schemas.pdf import RelationshipRef
 from app.schemas.tag import TagRef
 
 
@@ -21,10 +23,18 @@ class PDFRepository(IPDFRepository):
         file_path: str,
         file_size: int,
         uploaded_by: int,
-        act_name: Optional[str] = None,
+        document_name: Optional[str] = None,
+        reference_number: Optional[str] = None,
+        issue_date: Optional[date] = None,
+        effective_from: Optional[date] = None,
         gazette_reference: Optional[str] = None,
-        issuing_authority: Optional[str] = None,
-        enactment_date: Optional[date] = None,
+        legal_authority: Optional[str] = None,
+        short_title: Optional[str] = None,
+        valid_until: Optional[date] = None,
+        sector_domain: Optional[str] = None,
+        implementing_agency: Optional[str] = None,
+        next_review_date: Optional[date] = None,
+        rule_making_authority: Optional[str] = None,
         version_no: Optional[str] = "1.0",
         department_id: Optional[int] = None,
         document_type_id: Optional[int] = None,
@@ -35,9 +45,13 @@ class PDFRepository(IPDFRepository):
                 "EXEC sp_create_pdf_document "
                 "@filename = :filename, @original_filename = :original_filename, "
                 "@file_path = :file_path, @file_size = :file_size, "
-                "@uploaded_by = :uploaded_by, @act_name = :act_name, "
-                "@gazette_reference = :gazette_reference, @issuing_authority = :issuing_authority, "
-                "@enactment_date = :enactment_date, @version_no = :version_no, "
+                "@uploaded_by = :uploaded_by, @document_name = :document_name, "
+                "@reference_number = :reference_number, @issue_date = :issue_date, "
+                "@effective_from = :effective_from, @gazette_reference = :gazette_reference, "
+                "@legal_authority = :legal_authority, @short_title = :short_title, "
+                "@valid_until = :valid_until, @sector_domain = :sector_domain, "
+                "@implementing_agency = :implementing_agency, @next_review_date = :next_review_date, "
+                "@rule_making_authority = :rule_making_authority, @version_no = :version_no, "
                 "@department_id = :department_id, @document_type_id = :document_type_id, "
                 "@description = :description"
             ),
@@ -47,10 +61,18 @@ class PDFRepository(IPDFRepository):
                 "file_path": file_path,
                 "file_size": file_size,
                 "uploaded_by": uploaded_by,
-                "act_name": act_name,
+                "document_name": document_name,
+                "reference_number": reference_number,
+                "issue_date": issue_date,
+                "effective_from": effective_from,
                 "gazette_reference": gazette_reference,
-                "issuing_authority": issuing_authority,
-                "enactment_date": enactment_date,
+                "legal_authority": legal_authority,
+                "short_title": short_title,
+                "valid_until": valid_until,
+                "sector_domain": sector_domain,
+                "implementing_agency": implementing_agency,
+                "next_review_date": next_review_date,
+                "rule_making_authority": rule_making_authority,
                 "version_no": version_no,
                 "department_id": department_id,
                 "document_type_id": document_type_id,
@@ -83,6 +105,15 @@ class PDFRepository(IPDFRepository):
         )
         return [self._map_row(row) for row in result.mappings().fetchall()]
 
+    def save_relationships(self, pdf_id: int, relationships: list[dict]) -> None:
+        if not relationships:
+            return
+        self._db.execute(
+            text("EXEC sp_save_pdf_relationships @source_pdf_id = :pdf_id, @relationships = :rels"),
+            {"pdf_id": pdf_id, "rels": json.dumps(relationships)},
+        )
+        self._db.commit()
+
     @staticmethod
     def _parse_tags(tags_str: Optional[str]) -> list[TagRef]:
         if not tags_str:
@@ -99,6 +130,23 @@ class PDFRepository(IPDFRepository):
         return result
 
     @staticmethod
+    def _parse_relationships(rels_json: Optional[str]) -> list[RelationshipRef]:
+        if not rels_json:
+            return []
+        try:
+            items = json.loads(rels_json)
+            return [
+                RelationshipRef(
+                    pdf_id=item["pdf_id"],
+                    document_name=item.get("document_name"),
+                    type=item.get("type", "related"),
+                )
+                for item in items
+            ]
+        except (json.JSONDecodeError, KeyError):
+            return []
+
+    @staticmethod
     def _map_row(row) -> PDFDocument:
         d = dict(row)
         doc = PDFDocument(
@@ -107,10 +155,18 @@ class PDFRepository(IPDFRepository):
             original_filename=d["original_filename"],
             file_path=d["file_path"],
             file_size=d["file_size"],
-            act_name=d.get("act_name"),
+            document_name=d.get("document_name"),
+            reference_number=d.get("reference_number"),
+            issue_date=d.get("issue_date"),
+            effective_from=d.get("effective_from"),
             gazette_reference=d.get("gazette_reference"),
-            issuing_authority=d.get("issuing_authority"),
-            enactment_date=d.get("enactment_date"),
+            legal_authority=d.get("legal_authority"),
+            short_title=d.get("short_title"),
+            valid_until=d.get("valid_until"),
+            sector_domain=d.get("sector_domain"),
+            implementing_agency=d.get("implementing_agency"),
+            next_review_date=d.get("next_review_date"),
+            rule_making_authority=d.get("rule_making_authority"),
             version_no=d.get("version_no"),
             department_id=d.get("department_id"),
             document_type_id=d.get("document_type_id"),
@@ -121,4 +177,5 @@ class PDFRepository(IPDFRepository):
         doc.department_name = d.get("department_name")
         doc.document_type_name = d.get("document_type_name")
         doc.tags = PDFRepository._parse_tags(d.get("tags"))
+        doc.relationships = PDFRepository._parse_relationships(d.get("relationships"))
         return doc
