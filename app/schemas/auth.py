@@ -36,12 +36,18 @@ class UserOut(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     is_active: bool
+    must_change_password: bool = True
     role: Optional[RoleOut] = None
     department: Optional[DepartmentOut] = None
     created_at: datetime
     last_login: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
 
 
 class UserCreate(BaseModel):

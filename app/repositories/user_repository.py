@@ -129,6 +129,13 @@ class UserRepository(IUserRepository):
         )
         return [self._map_row(row) for row in result.mappings().fetchall()]
 
+    def change_password(self, user_id: int, hashed_password: str) -> None:
+        self._db.execute(
+            text("EXEC sp_change_password @user_id = :user_id, @hashed_password = :hashed_password"),
+            {"user_id": user_id, "hashed_password": hashed_password},
+        )
+        self._db.commit()
+
     @staticmethod
     def _map_row(row) -> User:
         row_dict = dict(row)
@@ -138,6 +145,7 @@ class UserRepository(IUserRepository):
             email=row_dict["email"],
             hashed_password=row_dict["hashed_password"],
             is_active=bool(row_dict["is_active"]),
+            must_change_password=bool(row_dict.get("must_change_password", True)),
             first_name=row_dict.get("first_name"),
             last_name=row_dict.get("last_name"),
             role_id=row_dict.get("role_id"),

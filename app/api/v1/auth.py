@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from app.core.dependencies import get_auth_service, get_current_user
 from app.models.user import User
-from app.schemas.auth import LoginRequest, TokenResponse, UserCreate, UserOut
+from app.schemas.auth import ChangePasswordRequest, LoginRequest, TokenResponse, UserCreate, UserOut
 from app.services.auth_service import AuthService
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -54,6 +54,21 @@ def logout(
     service: AuthService = Depends(get_auth_service),
 ):
     service.logout(current_user.id, _client_ip(request))
+
+
+@router.post("/change-password", response_model=TokenResponse)
+def change_password(
+    body: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    service: AuthService = Depends(get_auth_service),
+):
+    token = service.change_password(current_user.id, body.current_password, body.new_password)
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect",
+        )
+    return TokenResponse(access_token=token)
 
 
 @router.get("/me", response_model=UserOut)

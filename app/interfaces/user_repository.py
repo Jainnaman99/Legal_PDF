@@ -47,3 +47,7 @@ class IUserRepository(ABC):
     @abstractmethod
     def list_all(self, skip: int = 0, limit: int = 100, exclude_user_id: Optional[int] = None) -> list[User]:
         ...
+
+    @abstractmethod
+    def change_password(self, user_id: int, hashed_password: str) -> None:
+        ...
