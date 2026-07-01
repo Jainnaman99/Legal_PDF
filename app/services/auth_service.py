@@ -1,6 +1,6 @@
 from typing import Optional
 
-from app.core.security import create_access_token, decode_access_token, hash_password, verify_password
+from app.core.security import build_user_token, decode_access_token, hash_password, verify_password
 from app.interfaces.login_log_repository import ILoginLogRepository
 from app.interfaces.user_repository import IUserRepository
 from app.models.user import User
@@ -34,20 +34,7 @@ class AuthService:
         if not verify_password(password, user.hashed_password):
             return None
         self._log_repo.log(user.id, "login", ip_address)
-        return self._build_token(user)
-
-    def _build_token(self, user) -> str:
-        return create_access_token({
-            "sub":                  str(user.id),
-            "username":             user.username,
-            "email":                user.email,
-            "is_active":            user.is_active,
-            "must_change_password": user.must_change_password,
-            "role_id":              user.role_id,
-            "role":                 user.role.name if user.role else None,
-            "department_id":        user.department_id,
-            "department":           user.department.name if user.department else None,
-        })
+        return build_user_token(user)
 
     def change_password(self, user_id: int, current_password: str, new_password: str) -> Optional[str]:
         user = self._user_repo.get_by_id(user_id)
@@ -55,7 +42,7 @@ class AuthService:
             return None
         self._user_repo.change_password(user_id, hash_password(new_password))
         user = self._user_repo.get_by_id(user_id)
-        return self._build_token(user)
+        return build_user_token(user)
 
     def logout(self, user_id: int, ip_address: Optional[str] = None) -> None:
         self._log_repo.log(user_id, "logout", ip_address)

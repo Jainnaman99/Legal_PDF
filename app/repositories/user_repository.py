@@ -158,6 +158,7 @@ class UserRepository(IUserRepository):
             is_active=bool(row_dict["is_active"]),
             must_change_password=bool(row_dict.get("must_change_password", True)),
             mobile_number=row_dict.get("mobile_number"),
+            password_changed_at=row_dict.get("password_changed_at"),
             first_name=row_dict.get("first_name"),
             last_name=row_dict.get("last_name"),
             role_id=row_dict.get("role_id"),

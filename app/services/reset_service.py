@@ -3,7 +3,7 @@ import random
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from app.core.security import create_access_token, hash_password
+from app.core.security import build_user_token, hash_password
 from app.interfaces.reset_otp_repository import IResetOtpRepository
 from app.interfaces.user_repository import IUserRepository
 from app.models.user import User
@@ -42,18 +42,6 @@ class ResetService:
             return self._user_repo.get_by_email(identifier)
         return self._user_repo.get_by_mobile(identifier.strip())
 
-    def _build_token(self, user: User) -> str:
-        return create_access_token({
-            "sub":                  str(user.id),
-            "username":             user.username,
-            "email":                user.email,
-            "is_active":            user.is_active,
-            "must_change_password": False,
-            "role_id":              user.role_id,
-            "role":                 user.role.name if user.role else None,
-            "department_id":        user.department_id,
-            "department":           user.department.name if user.department else None,
-        })
 
     # ── public API ────────────────────────────────────────────
 
@@ -102,4 +90,4 @@ class ResetService:
         self._user_repo.change_password(user.id, hash_password(new_password))
 
         user = self._user_repo.get_by_id(user.id)
-        return self._build_token(user)
+        return build_user_token(user)
