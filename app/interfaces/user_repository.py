@@ -49,5 +49,9 @@ class IUserRepository(ABC):
         ...
 
     @abstractmethod
+    def get_by_mobile(self, mobile_number: str) -> Optional[User]:
+        ...
+
+    @abstractmethod
     def change_password(self, user_id: int, hashed_password: str) -> None:
         ...

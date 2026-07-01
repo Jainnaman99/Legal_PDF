@@ -31,6 +31,14 @@ class UserRepository(IUserRepository):
         row = result.mappings().fetchone()
         return self._map_row(row) if row else None
 
+    def get_by_mobile(self, mobile_number: str) -> Optional[User]:
+        result = self._db.execute(
+            text("EXEC sp_get_user_by_mobile @mobile_number = :mobile_number"),
+            {"mobile_number": mobile_number},
+        )
+        row = result.mappings().fetchone()
+        return self._map_row(row) if row else None
+
     def get_by_email(self, email: str) -> Optional[User]:
         result = self._db.execute(
             text("EXEC sp_get_user_by_email @email = :email"),
@@ -48,6 +56,7 @@ class UserRepository(IUserRepository):
         last_name: Optional[str] = None,
         role_id: Optional[int] = None,
         department_id: Optional[int] = None,
+        mobile_number: Optional[str] = None,
     ) -> User:
         try:
             result = self._db.execute(
@@ -56,7 +65,8 @@ class UserRepository(IUserRepository):
                     "@username = :username, @email = :email, "
                     "@hashed_password = :hashed_password, "
                     "@first_name = :first_name, @last_name = :last_name, "
-                    "@role_id = :role_id, @department_id = :department_id"
+                    "@role_id = :role_id, @department_id = :department_id, "
+                    "@mobile_number = :mobile_number"
                 ),
                 {
                     "username": username,
@@ -66,6 +76,7 @@ class UserRepository(IUserRepository):
                     "last_name": last_name,
                     "role_id": role_id,
                     "department_id": department_id,
+                    "mobile_number": mobile_number,
                 },
             )
             row = result.mappings().fetchone()
@@ -146,6 +157,7 @@ class UserRepository(IUserRepository):
             hashed_password=row_dict["hashed_password"],
             is_active=bool(row_dict["is_active"]),
             must_change_password=bool(row_dict.get("must_change_password", True)),
+            mobile_number=row_dict.get("mobile_number"),
             first_name=row_dict.get("first_name"),
             last_name=row_dict.get("last_name"),
             role_id=row_dict.get("role_id"),

@@ -1,3 +1,4 @@
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -17,6 +18,32 @@ class Settings(BaseSettings):
     DB_ENCRYPT: str = "yes"
 
     UPLOAD_DIR: str = "uploads"
+
+    # Email (SMTP) — set in .env for production
+    SMTP_HOST:     str = ""
+    SMTP_PORT:     int = 587
+    SMTP_USER:     str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM:     str = ""
+
+    # Twilio SMS — set in .env for production
+    TWILIO_ACCOUNT_SID:  str = ""
+    TWILIO_AUTH_TOKEN:   str = ""
+    TWILIO_PHONE_NUMBER: str = ""
+
+    @field_validator("SMTP_PORT", mode="before")
+    @classmethod
+    def _default_smtp_port(cls, v):
+        if v == "" or v is None:
+            return 587
+        return v
+
+    @field_validator("DB_PORT", mode="before")
+    @classmethod
+    def _default_db_port(cls, v):
+        if v == "" or v is None:
+            return 1433
+        return v
 
     model_config = {"env_file": ".env"}
 

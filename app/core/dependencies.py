@@ -9,6 +9,7 @@ from app.interfaces.login_log_repository import ILoginLogRepository
 from app.interfaces.pdf_approval_repository import IPDFApprovalRepository
 from app.interfaces.pdf_page_repository import IPDFPageRepository
 from app.interfaces.pdf_repository import IPDFRepository
+from app.interfaces.reset_otp_repository import IResetOtpRepository
 from app.interfaces.role_repository import IRoleRepository
 from app.interfaces.tag_repository import ITagRepository
 from app.interfaces.user_repository import IUserRepository
@@ -19,13 +20,17 @@ from app.repositories.login_log_repository import LoginLogRepository
 from app.repositories.pdf_approval_repository import PDFApprovalRepository
 from app.repositories.pdf_page_repository import PDFPageRepository
 from app.repositories.pdf_repository import PDFRepository
+from app.repositories.reset_otp_repository import ResetOtpRepository
 from app.repositories.role_repository import RoleRepository
 from app.repositories.tag_repository import TagRepository
 from app.repositories.user_repository import UserRepository
 from app.services.auth_service import AuthService
 from app.services.department_service import DepartmentService
+from app.services.email_service import EmailService
 from app.services.pdf_service import PDFService
+from app.services.reset_service import ResetService
 from app.services.role_service import RoleService
+from app.services.sms_service import SmsService
 
 bearer_scheme = HTTPBearer()
 
@@ -92,6 +97,17 @@ def get_role_service(
     repo: IRoleRepository = Depends(get_role_repository),
 ) -> RoleService:
     return RoleService(repo)
+
+
+def get_reset_otp_repository(db: Session = Depends(get_db)) -> IResetOtpRepository:
+    return ResetOtpRepository(db)
+
+
+def get_reset_service(
+    user_repo: IUserRepository = Depends(get_user_repository),
+    otp_repo: IResetOtpRepository = Depends(get_reset_otp_repository),
+) -> ResetService:
+    return ResetService(user_repo, otp_repo, EmailService(), SmsService())
 
 
 def get_current_user(

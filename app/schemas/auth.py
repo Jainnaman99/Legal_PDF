@@ -50,6 +50,16 @@ class ChangePasswordRequest(BaseModel):
     new_password: str
 
 
+class ForgotPasswordRequest(BaseModel):
+    identifier: str  # email address or mobile number
+
+
+class ResetPasswordRequest(BaseModel):
+    identifier: str  # same value used in forgot-password request
+    otp: str
+    new_password: str
+
+
 class UserCreate(BaseModel):
     username: str
     email: EmailStr
@@ -58,6 +68,7 @@ class UserCreate(BaseModel):
     last_name: Optional[str] = None
     role_id: Optional[int] = None
     department_id: Optional[int] = None
+    mobile_number: Optional[str] = None
 
 
 class UserUpdate(BaseModel):
@@ -68,6 +79,7 @@ class UserUpdate(BaseModel):
     is_active: Optional[bool] = None
     role_id: Optional[int] = None
     department_id: Optional[int] = None
+    mobile_number: Optional[str] = None
 
 
 class DepartmentCreate(BaseModel):
