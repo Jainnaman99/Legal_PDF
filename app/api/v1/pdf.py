@@ -192,7 +192,7 @@ def search_documents_by_type(
     document_type: str = Query(..., description="Document type: Act | Amendment | Notification | Circular | Policy | Rules & Regulations | Order/Gazette"),
     q: str = Query(..., min_length=1, description="Keyword to match against document names"),
     limit: int = Query(20, ge=1, le=100),
-    current_user: User = Depends(get_current_user),
+    # current_user: User = Depends(get_current_user),  # public — no citizen auth
     service: PDFService = Depends(get_pdf_service),
 ):
     if document_type not in VALID_DOCUMENT_TYPES:
@@ -219,7 +219,7 @@ def search_pdfs(
     q: str = Query(..., min_length=2, description="Word or phrase to search across all PDFs"),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
-    current_user: User = Depends(get_current_user),
+    # current_user: User = Depends(get_current_user),  # public — no citizen auth
     service: PDFService = Depends(get_pdf_service),
 ):
     rows = service.search(q, skip, limit)
@@ -252,7 +252,7 @@ def list_all_documents(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=1000),
     status: Optional[str] = Query(None, description="Filter by status: pending | approved | rejected"),
-    current_user: User = Depends(get_current_user),
+    # current_user: User = Depends(get_current_user),  # public — no citizen auth
     service: PDFService = Depends(get_pdf_service),
 ):
     if status and status not in ("pending", "approved", "rejected"):
@@ -460,7 +460,7 @@ def review_department_link(
 @router.get("/{document_id}/file", summary="Stream the original PDF file")
 def get_pdf_file(
     document_id: int,
-    current_user: User = Depends(get_current_user),
+    # current_user: User = Depends(get_current_user),  # public — no citizen auth
     service: PDFService = Depends(get_pdf_service),
 ):
     doc = service.get_by_id(document_id)
