@@ -14,12 +14,12 @@ class DocumentTypeRepository(IDocumentTypeRepository):
         self._db = db
 
     def list_all(self) -> list[DocumentType]:
-        result = self._db.execute(text("EXEC sp_list_document_types"))
+        result = self._db.execute(text("CALL sp_list_document_types()"))
         return [self._map_row(row) for row in result.mappings().fetchall()]
 
     def get_by_id(self, type_id: int) -> Optional[DocumentType]:
         result = self._db.execute(
-            text("EXEC sp_get_document_type_by_id @type_id = :type_id"),
+            text("CALL sp_get_document_type_by_id(:type_id)"),
             {"type_id": type_id},
         )
         row = result.mappings().fetchone()
@@ -28,7 +28,7 @@ class DocumentTypeRepository(IDocumentTypeRepository):
     def create(self, name: str, description: Optional[str] = None) -> DocumentType:
         try:
             result = self._db.execute(
-                text("EXEC sp_create_document_type @name = :name, @description = :description"),
+                text("CALL sp_create_document_type(:name, :description)"),
                 {"name": name, "description": description},
             )
             row = result.mappings().fetchone()
@@ -40,7 +40,7 @@ class DocumentTypeRepository(IDocumentTypeRepository):
 
     def toggle(self, type_id: int) -> Optional[DocumentType]:
         result = self._db.execute(
-            text("EXEC sp_toggle_document_type_status @type_id = :type_id"),
+            text("CALL sp_toggle_document_type_status(:type_id)"),
             {"type_id": type_id},
         )
         row = result.mappings().fetchone()

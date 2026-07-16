@@ -22,12 +22,7 @@ class PDFApprovalRepository(IPDFApprovalRepository):
         annotations_json: Optional[str] = None,
     ) -> Optional[PDFDocument]:
         result = self._db.execute(
-            text(
-                "EXEC sp_review_pdf_document "
-                "@pdf_id = :pdf_id, @approver_id = :approver_id, "
-                "@action = :action, @comments = :comments, "
-                "@annotations_json = :annotations_json"
-            ),
+            text("CALL sp_review_pdf_document(:pdf_id, :approver_id, :action, :comments, :annotations_json)"),
             {
                 "pdf_id": pdf_id,
                 "approver_id": approver_id,
