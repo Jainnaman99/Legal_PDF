@@ -58,26 +58,16 @@ class PDFRepository(IPDFRepository):
     ) -> PDFDocument:
         result = self._db.execute(
             text(
-                "EXEC sp_create_pdf_document "
-                "@filename = :filename, @original_filename = :original_filename, "
-                "@file_path = :file_path, @file_size = :file_size, "
-                "@uploaded_by = :uploaded_by, @document_name = :document_name, "
-                "@reference_number = :reference_number, @issue_date = :issue_date, "
-                "@effective_from = :effective_from, @gazette_reference = :gazette_reference, "
-                "@legal_authority = :legal_authority, @short_title = :short_title, "
-                "@valid_until = :valid_until, @sector_domain = :sector_domain, "
-                "@implementing_agency = :implementing_agency, @next_review_date = :next_review_date, "
-                "@rule_making_authority = :rule_making_authority, @version_no = :version_no, "
-                "@department_id = :department_id, @document_type_id = :document_type_id, "
-                "@description = :description, @summary = :summary, "
-                "@act_year = :act_year, @long_title = :long_title, "
-                "@regional_title = :regional_title, @notification_no = :notification_no, "
-                "@act_code = :act_code, @so_reason = :so_reason, "
-                "@no_of_rules = :no_of_rules, @no_of_notifications = :no_of_notifications, "
-                "@no_of_regulations = :no_of_regulations, @no_of_circulars = :no_of_circulars, "
-                "@no_of_statutes = :no_of_statutes, @no_of_ordinances = :no_of_ordinances, "
-                "@no_of_orders = :no_of_orders, @keywords = :keywords, "
-                "@is_repealed = :is_repealed"
+                "CALL sp_create_pdf_document("
+                ":filename, :original_filename, :file_path, :file_size, :uploaded_by, "
+                ":document_name, :reference_number, :issue_date, :effective_from, "
+                ":gazette_reference, :legal_authority, :short_title, :valid_until, "
+                ":sector_domain, :implementing_agency, :next_review_date, :rule_making_authority, "
+                ":version_no, :department_id, :document_type_id, :description, :summary, "
+                ":act_year, :long_title, :regional_title, :notification_no, :act_code, :so_reason, "
+                ":no_of_rules, :no_of_notifications, :no_of_regulations, :no_of_circulars, "
+                ":no_of_statutes, :no_of_ordinances, :no_of_orders, :keywords, :is_repealed"
+                ")"
             ),
             {
                 "filename": filename,
@@ -125,7 +115,7 @@ class PDFRepository(IPDFRepository):
 
     def get_by_id(self, document_id: int) -> Optional[PDFDocument]:
         result = self._db.execute(
-            text("EXEC sp_get_pdf_by_id @document_id = :document_id"),
+            text("CALL sp_get_pdf_by_id(:document_id)"),
             {"document_id": document_id},
         )
         row = result.mappings().fetchone()
@@ -133,7 +123,7 @@ class PDFRepository(IPDFRepository):
 
     def list_by_user(self, user_id: int, skip: int = 0, limit: int = 100) -> tuple[int, list[PDFDocument]]:
         result = self._db.execute(
-            text("EXEC sp_list_pdfs_by_user @user_id = :user_id, @skip = :skip, @limit = :limit"),
+            text("CALL sp_list_pdfs_by_user(:user_id, :skip, :limit)"),
             {"user_id": user_id, "skip": skip, "limit": limit},
         )
         rows = result.mappings().fetchall()
@@ -142,7 +132,7 @@ class PDFRepository(IPDFRepository):
 
     def list_all(self, skip: int = 0, limit: int = 100, status: Optional[str] = None) -> tuple[int, list[PDFDocument]]:
         result = self._db.execute(
-            text("EXEC sp_list_all_pdfs @skip = :skip, @limit = :limit, @status = :status"),
+            text("CALL sp_list_all_pdfs(:skip, :limit, :status)"),
             {"skip": skip, "limit": limit, "status": status},
         )
         rows = result.mappings().fetchall()
@@ -151,7 +141,7 @@ class PDFRepository(IPDFRepository):
 
     def get_pending(self, skip: int = 0, limit: int = 100) -> tuple[int, list[PDFDocument]]:
         result = self._db.execute(
-            text("EXEC sp_get_pending_pdfs @skip = :skip, @limit = :limit"),
+            text("CALL sp_get_pending_pdfs(:skip, :limit)"),
             {"skip": skip, "limit": limit},
         )
         rows = result.mappings().fetchall()
@@ -160,21 +150,21 @@ class PDFRepository(IPDFRepository):
 
     def search_documents_by_type(self, document_type: str, q: str, limit: int = 20) -> list[dict]:
         result = self._db.execute(
-            text("EXEC sp_search_documents_by_type @document_type = :document_type, @q = :q, @limit = :limit"),
+            text("CALL sp_search_documents_by_type(:document_type, :q, :limit)"),
             {"document_type": document_type, "q": q, "limit": limit},
         )
         return [dict(row) for row in result.mappings().fetchall()]
 
     def check_duplicate(self, document_name: str, document_type_id: int, caller_dept_id: int) -> list[dict]:
         result = self._db.execute(
-            text("EXEC sp_check_duplicate_document @document_name = :document_name, @document_type_id = :document_type_id, @caller_dept_id = :caller_dept_id"),
+            text("CALL sp_check_duplicate_document(:document_name, :document_type_id, :caller_dept_id)"),
             {"document_name": document_name, "document_type_id": document_type_id, "caller_dept_id": caller_dept_id},
         )
         return [dict(row) for row in result.mappings().fetchall()]
 
     def link_to_department(self, pdf_id: int, department_id: int, user_id: int) -> dict:
         result = self._db.execute(
-            text("EXEC sp_link_document_to_department @pdf_id = :pdf_id, @department_id = :department_id, @linked_by = :linked_by"),
+            text("CALL sp_link_document_to_department(:pdf_id, :department_id, :linked_by)"),
             {"pdf_id": pdf_id, "department_id": department_id, "linked_by": user_id},
         )
         row = result.mappings().fetchone()
@@ -183,35 +173,35 @@ class PDFRepository(IPDFRepository):
 
     def get_links_for_department(self, department_id: int, status: str | None = "pending") -> list[dict]:
         result = self._db.execute(
-            text("EXEC sp_get_department_links @department_id = :department_id, @status = :status"),
+            text("CALL sp_get_department_links(:department_id, :status)"),
             {"department_id": department_id, "status": status},
         )
         return [dict(row) for row in result.mappings().fetchall()]
 
     def review_department_link(self, link_id: int, action: str, reviewed_by: int, comments: str | None = None, annotations_json: str | None = None) -> None:
         self._db.execute(
-            text("EXEC sp_review_department_link @link_id = :link_id, @action = :action, @reviewed_by = :reviewed_by, @review_comments = :comments, @annotations_json = :annotations_json"),
+            text("CALL sp_review_department_link(:link_id, :action, :reviewed_by, :comments, :annotations_json)"),
             {"link_id": link_id, "action": action, "reviewed_by": reviewed_by, "comments": comments, "annotations_json": annotations_json},
         )
         self._db.commit()
 
     def get_linked_documents_for_department(self, department_id: int, status: str | None = None) -> list[dict]:
         result = self._db.execute(
-            text("EXEC sp_get_linked_documents_for_department @department_id = :department_id, @status = :status"),
+            text("CALL sp_get_linked_documents_for_department(:department_id, :status)"),
             {"department_id": department_id, "status": status},
         )
         return [dict(row) for row in result.mappings().fetchall()]
 
     def get_all_department_links(self, status: str | None = None, department_id: int | None = None) -> list[dict]:
         result = self._db.execute(
-            text("EXEC sp_get_all_department_links @status = :status, @department_id = :department_id"),
+            text("CALL sp_get_all_department_links(:status, :department_id)"),
             {"status": status, "department_id": department_id},
         )
         return [dict(row) for row in result.mappings().fetchall()]
 
     def get_documents_under_act(self, act_id: int) -> list[dict]:
         result = self._db.execute(
-            text("EXEC sp_get_documents_under_act @act_id = :act_id"),
+            text("CALL sp_get_documents_under_act(:act_id)"),
             {"act_id": act_id},
         )
         return [dict(row) for row in result.mappings().fetchall()]
@@ -220,7 +210,7 @@ class PDFRepository(IPDFRepository):
         if not relationships:
             return
         self._db.execute(
-            text("EXEC sp_save_pdf_relationships @source_pdf_id = :pdf_id, @relationships = :rels"),
+            text("CALL sp_save_pdf_relationships(:pdf_id, :rels)"),
             {"pdf_id": pdf_id, "rels": json.dumps(relationships)},
         )
         self._db.commit()

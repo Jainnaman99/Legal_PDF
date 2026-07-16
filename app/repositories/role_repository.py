@@ -14,7 +14,7 @@ class RoleRepository(IRoleRepository):
 
     def get_by_id(self, role_id: int) -> Optional[Role]:
         result = self._db.execute(
-            text("EXEC sp_get_role_by_id @role_id = :role_id"),
+            text("CALL sp_get_role_by_id(:role_id)"),
             {"role_id": role_id},
         )
         row = result.mappings().fetchone()
@@ -22,7 +22,7 @@ class RoleRepository(IRoleRepository):
 
     def list_all(self, skip: int = 0, limit: int = 100) -> list[Role]:
         result = self._db.execute(
-            text("EXEC sp_list_roles @skip = :skip, @limit = :limit"),
+            text("CALL sp_list_roles(:skip, :limit)"),
             {"skip": skip, "limit": limit},
         )
         return [self._map_row(row) for row in result.mappings().fetchall()]

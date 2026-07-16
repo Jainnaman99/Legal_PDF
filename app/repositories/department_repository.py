@@ -15,7 +15,7 @@ class DepartmentRepository(IDepartmentRepository):
 
     def get_by_id(self, department_id: int) -> Optional[Department]:
         result = self._db.execute(
-            text("EXEC sp_get_department_by_id @department_id = :department_id"),
+            text("CALL sp_get_department_by_id(:department_id)"),
             {"department_id": department_id},
         )
         row = result.mappings().fetchone()
@@ -24,7 +24,7 @@ class DepartmentRepository(IDepartmentRepository):
     def create(self, name: str, description: Optional[str] = None) -> Department:
         try:
             result = self._db.execute(
-                text("EXEC sp_create_department @name = :name, @description = :description"),
+                text("CALL sp_create_department(:name, :description)"),
                 {"name": name, "description": description},
             )
             row = result.mappings().fetchone()
@@ -36,14 +36,14 @@ class DepartmentRepository(IDepartmentRepository):
 
     def list_all(self, skip: int = 0, limit: int = 100) -> list[Department]:
         result = self._db.execute(
-            text("EXEC sp_list_departments @skip = :skip, @limit = :limit"),
+            text("CALL sp_list_departments(:skip, :limit)"),
             {"skip": skip, "limit": limit},
         )
         return [self._map_row(row) for row in result.mappings().fetchall()]
 
     def toggle(self, department_id: int) -> Optional[Department]:
         result = self._db.execute(
-            text("EXEC sp_toggle_department_status @department_id = :department_id"),
+            text("CALL sp_toggle_department_status(:department_id)"),
             {"department_id": department_id},
         )
         row = result.mappings().fetchone()

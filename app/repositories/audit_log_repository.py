@@ -24,13 +24,7 @@ class AuditLogRepository(IAuditLogRepository):
         status: str = "success",
     ) -> None:
         self._db.execute(
-            text(
-                "EXEC sp_create_audit_log "
-                "@user_id = :user_id, @action = :action, "
-                "@entity_type = :entity_type, @entity_id = :entity_id, "
-                "@details = :details, @ip_address = :ip_address, "
-                "@status = :status"
-            ),
+            text("CALL sp_create_audit_log(:user_id, :action, :entity_type, :entity_id, :details, :ip_address, :status)"),
             {
                 "user_id": user_id,
                 "action": action,
@@ -56,14 +50,7 @@ class AuditLogRepository(IAuditLogRepository):
         department_ids: Optional[str] = None,
     ) -> tuple[int, list[dict]]:
         result = self._db.execute(
-            text(
-                "EXEC sp_list_audit_logs "
-                "@skip = :skip, @limit = :limit, "
-                "@user_id = :user_id, @action = :action, "
-                "@entity_type = :entity_type, @from_date = :from_date, "
-                "@to_date = :to_date, @exclude_user_id = :exclude_user_id, "
-                "@dept_ids = :dept_ids"
-            ),
+            text("CALL sp_list_audit_logs(:skip, :limit, :user_id, :action, :entity_type, :from_date, :to_date, :exclude_user_id, :dept_ids)"),
             {
                 "skip": skip,
                 "limit": limit,

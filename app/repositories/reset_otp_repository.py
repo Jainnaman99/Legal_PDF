@@ -14,11 +14,7 @@ class ResetOtpRepository(IResetOtpRepository):
 
     def create(self, user_id: int, otp_hash: str, channel: str, expires_at: datetime) -> None:
         self._db.execute(
-            text(
-                "EXEC sp_create_reset_otp "
-                "@user_id = :user_id, @otp_hash = :otp_hash, "
-                "@channel = :channel, @expires_at = :expires_at"
-            ),
+            text("CALL sp_create_reset_otp(:user_id, :otp_hash, :channel, :expires_at)"),
             {
                 "user_id": user_id,
                 "otp_hash": otp_hash,
@@ -30,7 +26,7 @@ class ResetOtpRepository(IResetOtpRepository):
 
     def get_valid(self, user_id: int) -> Optional[dict]:
         result = self._db.execute(
-            text("EXEC sp_get_valid_reset_otp @user_id = :user_id"),
+            text("CALL sp_get_valid_reset_otp(:user_id)"),
             {"user_id": user_id},
         )
         row = result.mappings().fetchone()
@@ -38,7 +34,7 @@ class ResetOtpRepository(IResetOtpRepository):
 
     def mark_used(self, otp_id: int) -> None:
         self._db.execute(
-            text("EXEC sp_mark_otp_used @otp_id = :otp_id"),
+            text("CALL sp_mark_otp_used(:otp_id)"),
             {"otp_id": otp_id},
         )
         self._db.commit()
