@@ -1221,7 +1221,16 @@ CREATE PROCEDURE sp_get_documents_under_act(IN p_act_id INT)
 BEGIN
     SELECT
         p.id, p.document_name, p.reference_number, p.issue_date, p.status,
-        p.version_no, p.description, p.summary, p.uploaded_by, p.created_at,
+        p.version_no, p.effective_from, p.gazette_reference, p.legal_authority,
+        p.short_title, p.act_year, p.long_title, p.regional_title,
+        p.notification_no, p.act_code, p.so_reason,
+        p.no_of_rules, p.no_of_notifications, p.no_of_regulations, p.no_of_circulars,
+        p.no_of_statutes, p.no_of_ordinances, p.no_of_orders, p.keywords, p.is_repealed,
+        p.valid_until, p.sector_domain, p.implementing_agency, p.next_review_date,
+        p.rule_making_authority,
+        p.description, p.summary,
+        p.department_id, p.document_type_id,
+        p.uploaded_by, p.created_at,
         dt.name  AS document_type_name,
         dep.name AS department_name,
         u.username   AS uploader_username,

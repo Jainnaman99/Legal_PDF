@@ -352,10 +352,55 @@ class ActChildDocument(BaseModel):
     issue_date: Optional[date] = None
     status: str
     version_no: Optional[str] = None
-    document_type_name: str
+
+    # Shared optional fields
+    effective_from: Optional[date] = None
+    gazette_reference: Optional[str] = None
+    legal_authority: Optional[str] = None
+
+    # Act-specific
+    short_title: Optional[str] = None
+    act_year: Optional[int] = None
+    long_title: Optional[str] = None
+    regional_title: Optional[str] = None
+    notification_no: Optional[str] = None
+    act_code: Optional[str] = None
+    so_reason: Optional[str] = None
+    no_of_rules: Optional[int] = None
+    no_of_notifications: Optional[int] = None
+    no_of_regulations: Optional[int] = None
+    no_of_circulars: Optional[int] = None
+    no_of_statutes: Optional[int] = None
+    no_of_ordinances: Optional[int] = None
+    no_of_orders: Optional[int] = None
+    keywords: Optional[str] = None
+    is_repealed: bool = False
+
+    # Circular-specific
+    valid_until: Optional[date] = None
+
+    # Policy-specific
+    sector_domain: Optional[str] = None
+    implementing_agency: Optional[str] = None
+    next_review_date: Optional[date] = None
+
+    # Rules & Regulations-specific
+    rule_making_authority: Optional[str] = None
+
+    description: Optional[str] = None
+    summary: Optional[str] = None
+
+    department_id: Optional[int] = None
     department_name: Optional[str] = None
+    document_type_id: Optional[int] = None
+    document_type_name: str
+
+    uploaded_by: int
     uploader_username: Optional[str] = None
+    uploader_first_name: Optional[str] = None
+    uploader_last_name: Optional[str] = None
     created_at: datetime
+
     relationship_type: Optional[str] = None
 
 
