@@ -333,7 +333,7 @@ class SearchResultItem(BaseModel):
     pdf_id: int
     original_filename: str
     page_number: int
-    relevance_score: int
+    relevance_score: float
     snippet: str
 
 

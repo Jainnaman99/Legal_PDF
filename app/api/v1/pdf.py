@@ -236,17 +236,16 @@ def search_pdfs(
     q: str = Query(..., min_length=2, description="Word or phrase to search across all PDFs"),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
-    current_user: User = Depends(get_current_user),
     service: PDFService = Depends(get_pdf_service),
 ):
     rows = service.search(q, skip, limit)
     results = [
         SearchResultItem(
-            pdf_id=r["pdf_document_id"],
+            pdf_id=r["pdf_id"],
             original_filename=r["original_filename"],
             page_number=r["page_number"],
             relevance_score=r["relevance_score"],
-            snippet=r["snippet"],
+            snippet=r["page_text"],
         )
         for r in rows
     ]
@@ -264,12 +263,27 @@ def list_my_documents(
     return PDFListResponse(total=total, documents=documents)
 
 
+@router.get("/my-department/acts", response_model=PDFListResponse, summary="List all Acts uploaded in the current user's department(s)")
+def list_acts_by_my_department(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=1000),
+    status: Optional[str] = Query(None, description="Filter by status: pending | approved | rejected"),
+    current_user: User = Depends(get_current_user),
+    service: PDFService = Depends(get_pdf_service),
+):
+    if not current_user.department_id:
+        raise HTTPException(status_code=400, detail="Your account has no department assigned")
+    if status and status not in ("pending", "approved", "rejected"):
+        raise HTTPException(status_code=400, detail="status must be one of: pending, approved, rejected")
+    total, documents = service.list_acts_by_department(current_user.department_id, skip, limit, status)
+    return PDFListResponse(total=total, documents=documents)
+
+
 @router.get("/all", response_model=PDFListResponse)
 def list_all_documents(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=1000),
     status: Optional[str] = Query(None, description="Filter by status: pending | approved | rejected"),
-    current_user: User = Depends(get_current_user),
     service: PDFService = Depends(get_pdf_service),
 ):
     if status and status not in ("pending", "approved", "rejected"):
@@ -492,7 +506,6 @@ def get_act_children(
 @router.get("/{document_id}/file", summary="Stream the original PDF file")
 def get_pdf_file(
     document_id: int,
-    current_user: User = Depends(get_current_user),
     service: PDFService = Depends(get_pdf_service),
 ):
     doc = service.get_by_id(document_id)
