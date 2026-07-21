@@ -199,6 +199,15 @@ class PDFRepository(IPDFRepository):
         )
         return [dict(row) for row in result.mappings().fetchall()]
 
+    def list_docs_by_dept_and_type(self, dept_ids: str, doc_type_id: int, skip: int = 0, limit: int = 100, status: Optional[str] = None) -> tuple[int, list[PDFDocument]]:
+        result = self._db.execute(
+            text("CALL sp_list_docs_by_dept_and_type(:dept_ids, :doc_type_id, :skip, :limit, :status)"),
+            {"dept_ids": dept_ids, "doc_type_id": doc_type_id, "skip": skip, "limit": limit, "status": status},
+        )
+        rows = result.mappings().fetchall()
+        total = rows[0]["total_count"] if rows else 0
+        return total, [self._map_row(row) for row in rows]
+
     def list_acts_by_department(self, dept_ids: str, skip: int = 0, limit: int = 100, status: Optional[str] = None) -> tuple[int, list[PDFDocument]]:
         result = self._db.execute(
             text("CALL sp_list_acts_by_department(:dept_ids, :skip, :limit, :status)"),

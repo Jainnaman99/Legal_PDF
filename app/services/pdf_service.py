@@ -248,3 +248,6 @@ class PDFService:
 
     def list_acts_by_department(self, dept_ids: str, skip: int, limit: int, status: Optional[str]) -> tuple[int, list]:
         return self._pdf_repo.list_acts_by_department(dept_ids, skip, limit, status)
+
+    def list_docs_by_dept_and_type(self, dept_ids: str, doc_type_id: int, skip: int, limit: int, status: Optional[str]) -> tuple[int, list]:
+        return self._pdf_repo.list_docs_by_dept_and_type(dept_ids, doc_type_id, skip, limit, status)

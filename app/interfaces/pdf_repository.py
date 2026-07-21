@@ -90,3 +90,7 @@ class IPDFRepository(ABC):
     @abstractmethod
     def list_acts_by_department(self, dept_ids: str, skip: int, limit: int, status: Optional[str]) -> tuple[int, list[PDFDocument]]:
         ...
+
+    @abstractmethod
+    def list_docs_by_dept_and_type(self, dept_ids: str, doc_type_id: int, skip: int, limit: int, status: Optional[str]) -> tuple[int, list[PDFDocument]]:
+        ...
