@@ -251,3 +251,15 @@ class PDFService:
 
     def list_docs_by_dept_and_type(self, dept_ids: str, doc_type_id: int, skip: int, limit: int, status: Optional[str]) -> tuple[int, list]:
         return self._pdf_repo.list_docs_by_dept_and_type(dept_ids, doc_type_id, skip, limit, status)
+
+    def update_document(self, document_id: int, tag_ids: Optional[list] = None, relationships: Optional[list] = None, **fields) -> Optional[PDFDocument]:
+        doc = self._pdf_repo.update(document_id, **fields)
+        if doc is None:
+            return None
+        if tag_ids is not None:
+            self._tag_repo.save_document_tags(doc.id, tag_ids)
+            doc.tags = [t for t in self._tag_repo.list_all() if t.id in tag_ids]
+        if relationships is not None:
+            rels = [{"pdf_id": r.pdf_id, "type": r.type} for r in relationships]
+            self._pdf_repo.save_relationships(doc.id, rels)
+        return doc

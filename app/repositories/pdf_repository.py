@@ -113,6 +113,92 @@ class PDFRepository(IPDFRepository):
         self._db.commit()
         return self._map_row(row)
 
+    def update(
+        self,
+        document_id: int,
+        document_name: Optional[str] = None,
+        reference_number: Optional[str] = None,
+        issue_date: Optional[date] = None,
+        effective_from: Optional[date] = None,
+        gazette_reference: Optional[str] = None,
+        legal_authority: Optional[str] = None,
+        short_title: Optional[str] = None,
+        valid_until: Optional[date] = None,
+        sector_domain: Optional[str] = None,
+        implementing_agency: Optional[str] = None,
+        next_review_date: Optional[date] = None,
+        rule_making_authority: Optional[str] = None,
+        version_no: Optional[str] = None,
+        department_id: Optional[int] = None,
+        document_type_id: Optional[int] = None,
+        description: Optional[str] = None,
+        act_year: Optional[int] = None,
+        long_title: Optional[str] = None,
+        regional_title: Optional[str] = None,
+        notification_no: Optional[str] = None,
+        act_code: Optional[str] = None,
+        so_reason: Optional[str] = None,
+        no_of_rules: Optional[int] = None,
+        no_of_notifications: Optional[int] = None,
+        no_of_regulations: Optional[int] = None,
+        no_of_circulars: Optional[int] = None,
+        no_of_statutes: Optional[int] = None,
+        no_of_ordinances: Optional[int] = None,
+        no_of_orders: Optional[int] = None,
+        keywords: Optional[str] = None,
+        is_repealed: Optional[bool] = None,
+    ) -> Optional[PDFDocument]:
+        result = self._db.execute(
+            text(
+                "CALL sp_update_pdf_document("
+                ":document_id, :document_name, :reference_number, :issue_date, :effective_from, "
+                ":gazette_reference, :legal_authority, :short_title, :valid_until, "
+                ":sector_domain, :implementing_agency, :next_review_date, :rule_making_authority, "
+                ":version_no, :department_id, :document_type_id, :description, "
+                ":act_year, :long_title, :regional_title, :notification_no, :act_code, :so_reason, "
+                ":no_of_rules, :no_of_notifications, :no_of_regulations, :no_of_circulars, "
+                ":no_of_statutes, :no_of_ordinances, :no_of_orders, :keywords, :is_repealed"
+                ")"
+            ),
+            {
+                "document_id": document_id,
+                "document_name": document_name,
+                "reference_number": reference_number,
+                "issue_date": issue_date,
+                "effective_from": effective_from,
+                "gazette_reference": gazette_reference,
+                "legal_authority": legal_authority,
+                "short_title": short_title,
+                "valid_until": valid_until,
+                "sector_domain": sector_domain,
+                "implementing_agency": implementing_agency,
+                "next_review_date": next_review_date,
+                "rule_making_authority": rule_making_authority,
+                "version_no": version_no,
+                "department_id": department_id,
+                "document_type_id": document_type_id,
+                "description": description,
+                "act_year": act_year,
+                "long_title": long_title,
+                "regional_title": regional_title,
+                "notification_no": notification_no,
+                "act_code": act_code,
+                "so_reason": so_reason,
+                "no_of_rules": no_of_rules,
+                "no_of_notifications": no_of_notifications,
+                "no_of_regulations": no_of_regulations,
+                "no_of_circulars": no_of_circulars,
+                "no_of_statutes": no_of_statutes,
+                "no_of_ordinances": no_of_ordinances,
+                "no_of_orders": no_of_orders,
+                "keywords": keywords,
+                "is_repealed": is_repealed,
+            },
+        )
+        row = result.mappings().fetchone()
+        self._db.commit()
+        return self._map_row(row) if row else None
+
     def get_by_id(self, document_id: int) -> Optional[PDFDocument]:
         result = self._db.execute(
             text("CALL sp_get_pdf_by_id(:document_id)"),

@@ -40,6 +40,44 @@ class IPDFRepository(ABC):
         ...
 
     @abstractmethod
+    def update(
+        self,
+        document_id: int,
+        document_name: Optional[str] = None,
+        reference_number: Optional[str] = None,
+        issue_date: Optional[date] = None,
+        effective_from: Optional[date] = None,
+        gazette_reference: Optional[str] = None,
+        legal_authority: Optional[str] = None,
+        short_title: Optional[str] = None,
+        valid_until: Optional[date] = None,
+        sector_domain: Optional[str] = None,
+        implementing_agency: Optional[str] = None,
+        next_review_date: Optional[date] = None,
+        rule_making_authority: Optional[str] = None,
+        version_no: Optional[str] = None,
+        department_id: Optional[int] = None,
+        document_type_id: Optional[int] = None,
+        description: Optional[str] = None,
+        act_year: Optional[int] = None,
+        long_title: Optional[str] = None,
+        regional_title: Optional[str] = None,
+        notification_no: Optional[str] = None,
+        act_code: Optional[str] = None,
+        so_reason: Optional[str] = None,
+        no_of_rules: Optional[int] = None,
+        no_of_notifications: Optional[int] = None,
+        no_of_regulations: Optional[int] = None,
+        no_of_circulars: Optional[int] = None,
+        no_of_statutes: Optional[int] = None,
+        no_of_ordinances: Optional[int] = None,
+        no_of_orders: Optional[int] = None,
+        keywords: Optional[str] = None,
+        is_repealed: Optional[bool] = None,
+    ) -> Optional[PDFDocument]:
+        ...
+
+    @abstractmethod
     def list_by_user(self, user_id: int, skip: int = 0, limit: int = 100) -> tuple[int, list[PDFDocument]]:
         ...
 

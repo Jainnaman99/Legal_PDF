@@ -23,6 +23,7 @@ from app.schemas.pdf import (
     PDFCreateRequest,
     PDFListResponse,
     PDFReviewRequest,
+    PDFUpdateRequest,
     PDFUploadResponse,
     SearchResponse,
     SearchResultItem,
@@ -302,6 +303,60 @@ def list_docs_by_my_department_and_type(
         raise HTTPException(status_code=400, detail="status must be one of: pending, approved, rejected")
     total, documents = service.list_docs_by_dept_and_type(current_user.department_id, doc_type_id, skip, limit, status)
     return PDFListResponse(total=total, documents=documents)
+
+
+@router.put("/{document_id}", response_model=PDFUploadResponse, summary="Update document metadata")
+def update_document(
+    document_id: int,
+    body: PDFUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    service: PDFService = Depends(get_pdf_service),
+):
+    doc = service.get_by_id(document_id)
+    if not doc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+    if doc.uploaded_by != current_user.id and not any(
+        r in (current_user.role.name if current_user.role else "") for r in ("admin", "super Admin")
+    ):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorised to edit this document")
+
+    updated = service.update_document(
+        document_id=document_id,
+        tag_ids=body.tag_ids,
+        relationships=body.relationships,
+        document_name=body.document_name,
+        reference_number=body.reference_number,
+        issue_date=body.issue_date,
+        effective_from=body.effective_from,
+        gazette_reference=body.gazette_reference,
+        legal_authority=body.legal_authority,
+        short_title=body.short_title,
+        valid_until=body.valid_until,
+        sector_domain=body.sector_domain,
+        implementing_agency=body.implementing_agency,
+        next_review_date=body.next_review_date,
+        rule_making_authority=body.rule_making_authority,
+        version_no=body.version_no,
+        department_id=body.department_id,
+        document_type_id=body.document_type_id,
+        description=body.description,
+        act_year=body.act_year,
+        long_title=body.long_title,
+        regional_title=body.regional_title,
+        notification_no=body.notification_no,
+        act_code=body.act_code,
+        so_reason=body.so_reason,
+        no_of_rules=body.no_of_rules,
+        no_of_notifications=body.no_of_notifications,
+        no_of_regulations=body.no_of_regulations,
+        no_of_circulars=body.no_of_circulars,
+        no_of_statutes=body.no_of_statutes,
+        no_of_ordinances=body.no_of_ordinances,
+        no_of_orders=body.no_of_orders,
+        keywords=body.keywords,
+        is_repealed=body.is_repealed,
+    )
+    return updated
 
 
 @router.get("/all", response_model=PDFListResponse)
