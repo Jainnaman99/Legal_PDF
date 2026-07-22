@@ -30,3 +30,10 @@ class PDFPageRepository(IPDFPageRepository):
             {"doc_id": pdf_document_id},
         )
         self._db.commit()
+
+    def get_pages_by_document(self, pdf_document_id: int) -> list[tuple[int, str]]:
+        result = self._db.execute(
+            text("SELECT page_number, page_text FROM pdf_pages WHERE pdf_document_id = :doc_id ORDER BY page_number"),
+            {"doc_id": pdf_document_id},
+        )
+        return [(row["page_number"], row["page_text"]) for row in result.mappings().fetchall()]

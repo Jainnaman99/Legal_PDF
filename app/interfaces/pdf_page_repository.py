@@ -14,3 +14,7 @@ class IPDFPageRepository(ABC):
     @abstractmethod
     def delete_by_document(self, pdf_document_id: int) -> None:
         ...
+
+    @abstractmethod
+    def get_pages_by_document(self, pdf_document_id: int) -> list[tuple[int, str]]:
+        ...

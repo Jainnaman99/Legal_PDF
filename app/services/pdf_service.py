@@ -10,6 +10,7 @@ from app.interfaces.pdf_approval_repository import IPDFApprovalRepository
 from app.interfaces.pdf_page_repository import IPDFPageRepository
 from app.interfaces.pdf_repository import IPDFRepository
 from app.interfaces.tag_repository import ITagRepository
+from app.services.vector_store_service import VectorStoreService
 from app.models.pdf_document import PDFDocument
 from app.schemas.pdf import FileUploadResponse, RelationshipInput
 from app.services.pdf_extractor import extract_pages
@@ -25,11 +26,13 @@ class PDFService:
         page_repo: IPDFPageRepository,
         tag_repo: ITagRepository,
         approval_repo: IPDFApprovalRepository,
+        vector_store: Optional[VectorStoreService] = None,
     ):
         self._pdf_repo = pdf_repo
         self._page_repo = page_repo
         self._tag_repo = tag_repo
         self._approval_repo = approval_repo
+        self._vector_store = vector_store
 
     async def store_file(self, file: UploadFile) -> FileUploadResponse:
         os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
@@ -186,6 +189,18 @@ class PDFService:
                 self._page_repo.save_pages(doc.id, pages)
             except Exception:
                 pass  # FTS page indexing is best-effort; document + relationships already committed
+
+            if self._vector_store is not None:
+                try:
+                    self._vector_store.index_pages(
+                        pdf_id=doc.id,
+                        document_name=doc.document_name or original_filename,
+                        document_type_name=getattr(doc, "document_type_name", "") or "",
+                        department_name=getattr(doc, "department_name", "") or "",
+                        pages=pages,
+                    )
+                except Exception:
+                    pass  # embedding failure must not block upload
 
         return doc
 

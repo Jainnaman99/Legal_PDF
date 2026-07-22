@@ -16,9 +16,13 @@ class Settings(BaseSettings):
 
     UPLOAD_DIR: str = "uploads"
 
-    # Ollama — local LLM for PDF summarisation
+    # Ollama — local LLM for PDF summarisation and embeddings
     OLLAMA_HOST:  str = "http://localhost:11434"
     OLLAMA_MODEL: str = "llama3.2"   # any model pulled via `ollama pull <model>`
+    EMBED_MODEL:  str = "nomic-embed-text"  # ollama pull nomic-embed-text
+
+    # ChromaDB — local vector store for semantic search
+    CHROMA_DIR:   str = "chroma_store"
 
     # Tesseract OCR
     TESSERACT_CMD:  str = ""       # blank = use system PATH; Windows: full path to tesseract.exe

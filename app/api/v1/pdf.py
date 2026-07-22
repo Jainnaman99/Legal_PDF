@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, Upl
 from fastapi.responses import FileResponse
 
 from app.core.config import settings
-from app.core.dependencies import get_audit_service, get_current_user, get_pdf_service, require_roles
+from app.core.dependencies import get_audit_service, get_current_user, get_pdf_service, get_rag_service, require_roles
 from app.models.user import User
 from app.schemas.audit import AuditLogOut
 from app.schemas.pdf import (
@@ -28,8 +28,10 @@ from app.schemas.pdf import (
     SearchResponse,
     SearchResultItem,
 )
+from app.schemas.semantic_search import SemanticSearchResponse
 from app.services.audit_service import AuditService
 from app.services.pdf_service import PDFService
+from app.services.rag_service import RAGService
 from app.utils.request_utils import get_client_ip
 
 router = APIRouter(prefix="/pdf", tags=["PDF Documents"])
@@ -359,6 +361,24 @@ def update_document(
     return updated
 
 
+@router.get(
+    "/public/semantic-search",
+    response_model=SemanticSearchResponse,
+    summary="Semantic / AI search — no token required",
+)
+def semantic_search(
+    request: Request,
+    q: str = Query(..., min_length=5, description="Natural language question"),
+    top_k: int = Query(5, ge=1, le=10),
+    rag: RAGService = Depends(get_rag_service),
+):
+    result = rag.answer(q, top_k)
+    base = str(request.base_url).rstrip("/")
+    for source in result["sources"]:
+        source["file_url"] = f"{base}/api/v1/pdf/{source['pdf_id']}/file"
+    return SemanticSearchResponse(question=q, **result)
+
+
 @router.get("/public/search", response_model=PDFListResponse, summary="Public citizen search — no token required")
 def citizen_search(
     document_type_id: Optional[int] = Query(None, description="Filter by document type ID"),
@@ -613,4 +633,4 @@ def get_pdf_file(
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         if ext == ".docx" else "application/pdf"
     )
-    return FileResponse(fp, media_type=media_type, filename=doc.original_filename or "document")
+    return FileResponse(fp, media_type=media_type, filename=doc.original_filename or "document", content_disposition_type="inline")

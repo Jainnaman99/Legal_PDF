@@ -1,3 +1,5 @@
+from functools import lru_cache
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
@@ -35,9 +37,11 @@ from app.services.sms_service import SmsService
 from app.services.department_service import DepartmentService
 from app.services.email_service import EmailService
 from app.services.pdf_service import PDFService
+from app.services.rag_service import RAGService
 from app.services.reset_service import ResetService
 from app.services.role_service import RoleService
 from app.services.sms_service import SmsService
+from app.services.vector_store_service import VectorStoreService
 
 bearer_scheme = HTTPBearer()
 
@@ -102,13 +106,22 @@ def get_pdf_approval_repository(db: Session = Depends(get_db)) -> IPDFApprovalRe
     return PDFApprovalRepository(db)
 
 
+@lru_cache(maxsize=1)
+def _get_vector_store() -> VectorStoreService:
+    return VectorStoreService()
+
+
+def get_rag_service() -> RAGService:
+    return RAGService(_get_vector_store())
+
+
 def get_pdf_service(
     repo: IPDFRepository = Depends(get_pdf_repository),
     page_repo: IPDFPageRepository = Depends(get_pdf_page_repository),
     tag_repo: ITagRepository = Depends(get_tag_repository),
     approval_repo: IPDFApprovalRepository = Depends(get_pdf_approval_repository),
 ) -> PDFService:
-    return PDFService(repo, page_repo, tag_repo, approval_repo)
+    return PDFService(repo, page_repo, tag_repo, approval_repo, _get_vector_store())
 
 
 def get_role_repository(db: Session = Depends(get_db)) -> IRoleRepository:
