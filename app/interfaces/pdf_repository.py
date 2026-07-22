@@ -132,3 +132,7 @@ class IPDFRepository(ABC):
     @abstractmethod
     def list_docs_by_dept_and_type(self, dept_ids: str, doc_type_id: int, skip: int, limit: int, status: Optional[str]) -> tuple[int, list[PDFDocument]]:
         ...
+
+    @abstractmethod
+    def citizen_search(self, document_type_id: Optional[int], name_prefix: Optional[str], skip: int, limit: int) -> tuple[int, list[PDFDocument]]:
+        ...

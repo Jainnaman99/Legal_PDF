@@ -252,6 +252,9 @@ class PDFService:
     def list_docs_by_dept_and_type(self, dept_ids: str, doc_type_id: int, skip: int, limit: int, status: Optional[str]) -> tuple[int, list]:
         return self._pdf_repo.list_docs_by_dept_and_type(dept_ids, doc_type_id, skip, limit, status)
 
+    def citizen_search(self, document_type_id: Optional[int], name_prefix: Optional[str], skip: int, limit: int) -> tuple[int, list]:
+        return self._pdf_repo.citizen_search(document_type_id, name_prefix, skip, limit)
+
     def update_document(self, document_id: int, tag_ids: Optional[list] = None, relationships: Optional[list] = None, **fields) -> Optional[PDFDocument]:
         doc = self._pdf_repo.update(document_id, **fields)
         if doc is None:

@@ -285,6 +285,15 @@ class PDFRepository(IPDFRepository):
         )
         return [dict(row) for row in result.mappings().fetchall()]
 
+    def citizen_search(self, document_type_id: Optional[int] = None, name_prefix: Optional[str] = None, skip: int = 0, limit: int = 20) -> tuple[int, list[PDFDocument]]:
+        result = self._db.execute(
+            text("CALL sp_citizen_search_docs(:document_type_id, :name_prefix, :skip, :limit)"),
+            {"document_type_id": document_type_id, "name_prefix": name_prefix, "skip": skip, "limit": limit},
+        )
+        rows = result.mappings().fetchall()
+        total = rows[0]["total_count"] if rows else 0
+        return total, [self._map_row(row) for row in rows]
+
     def list_docs_by_dept_and_type(self, dept_ids: str, doc_type_id: int, skip: int = 0, limit: int = 100, status: Optional[str] = None) -> tuple[int, list[PDFDocument]]:
         result = self._db.execute(
             text("CALL sp_list_docs_by_dept_and_type(:dept_ids, :doc_type_id, :skip, :limit, :status)"),
