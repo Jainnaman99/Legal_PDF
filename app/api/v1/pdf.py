@@ -307,6 +307,17 @@ def list_docs_by_my_department_and_type(
     return PDFListResponse(total=total, documents=documents)
 
 
+@router.get("/{document_id}", response_model=PDFUploadResponse, summary="Get document details by ID — approved documents only")
+def get_document_by_id(
+    document_id: int,
+    service: PDFService = Depends(get_pdf_service),
+):
+    doc = service.get_by_id(document_id)
+    if not doc or doc.status != "approved":
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+    return doc
+
+
 @router.put("/{document_id}", response_model=PDFUploadResponse, summary="Update document metadata")
 def update_document(
     document_id: int,
