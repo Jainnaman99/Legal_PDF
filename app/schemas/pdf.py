@@ -63,6 +63,21 @@ class PDFCreateRequest(BaseModel):
 
     # Act-specific
     short_title: Optional[str] = None
+    act_year: Optional[int] = None
+    long_title: Optional[str] = None
+    regional_title: Optional[str] = None
+    notification_no: Optional[str] = None
+    act_code: Optional[str] = None
+    so_reason: Optional[str] = None
+    no_of_rules: Optional[int] = None
+    no_of_notifications: Optional[int] = None
+    no_of_regulations: Optional[int] = None
+    no_of_circulars: Optional[int] = None
+    no_of_statutes: Optional[int] = None
+    no_of_ordinances: Optional[int] = None
+    no_of_orders: Optional[int] = None
+    keywords: Optional[str] = None
+    is_repealed: bool = False
 
     # Circular-specific
     valid_until: Optional[date] = None
@@ -79,6 +94,44 @@ class PDFCreateRequest(BaseModel):
     tag_ids: Optional[list[int]] = None
     relationships: Optional[list[RelationshipInput]] = None
     description: Optional[str] = None
+
+
+# ── Update request ───────────────────────────────────────────
+
+class PDFUpdateRequest(BaseModel):
+    document_name: Optional[str] = None
+    reference_number: Optional[str] = None
+    issue_date: Optional[date] = None
+    effective_from: Optional[date] = None
+    gazette_reference: Optional[str] = None
+    legal_authority: Optional[str] = None
+    short_title: Optional[str] = None
+    valid_until: Optional[date] = None
+    sector_domain: Optional[str] = None
+    implementing_agency: Optional[str] = None
+    next_review_date: Optional[date] = None
+    rule_making_authority: Optional[str] = None
+    version_no: Optional[str] = None
+    department_id: Optional[int] = None
+    document_type_id: Optional[int] = None
+    description: Optional[str] = None
+    act_year: Optional[int] = None
+    long_title: Optional[str] = None
+    regional_title: Optional[str] = None
+    notification_no: Optional[str] = None
+    act_code: Optional[str] = None
+    so_reason: Optional[str] = None
+    no_of_rules: Optional[int] = None
+    no_of_notifications: Optional[int] = None
+    no_of_regulations: Optional[int] = None
+    no_of_circulars: Optional[int] = None
+    no_of_statutes: Optional[int] = None
+    no_of_ordinances: Optional[int] = None
+    no_of_orders: Optional[int] = None
+    keywords: Optional[str] = None
+    is_repealed: Optional[bool] = None
+    tag_ids: Optional[list[int]] = None
+    relationships: Optional[list[RelationshipInput]] = None
 
 
 # ── Responses ────────────────────────────────────────────────
@@ -103,6 +156,23 @@ class PDFUploadResponse(BaseModel):
     next_review_date: Optional[date] = None
     rule_making_authority: Optional[str] = None
     version_no: Optional[str] = None
+
+    # Act-specific extended fields
+    act_year: Optional[int] = None
+    long_title: Optional[str] = None
+    regional_title: Optional[str] = None
+    notification_no: Optional[str] = None
+    act_code: Optional[str] = None
+    so_reason: Optional[str] = None
+    no_of_rules: Optional[int] = None
+    no_of_notifications: Optional[int] = None
+    no_of_regulations: Optional[int] = None
+    no_of_circulars: Optional[int] = None
+    no_of_statutes: Optional[int] = None
+    no_of_ordinances: Optional[int] = None
+    no_of_orders: Optional[int] = None
+    keywords: Optional[str] = None
+    is_repealed: bool = False
 
     department_id: Optional[int] = None
     department_name: Optional[str] = None
@@ -139,6 +209,23 @@ class PDFListItem(BaseModel):
     next_review_date: Optional[date] = None
     rule_making_authority: Optional[str] = None
     version_no: Optional[str] = None
+
+    # Act-specific extended fields
+    act_year: Optional[int] = None
+    long_title: Optional[str] = None
+    regional_title: Optional[str] = None
+    notification_no: Optional[str] = None
+    act_code: Optional[str] = None
+    so_reason: Optional[str] = None
+    no_of_rules: Optional[int] = None
+    no_of_notifications: Optional[int] = None
+    no_of_regulations: Optional[int] = None
+    no_of_circulars: Optional[int] = None
+    no_of_statutes: Optional[int] = None
+    no_of_ordinances: Optional[int] = None
+    no_of_orders: Optional[int] = None
+    keywords: Optional[str] = None
+    is_repealed: bool = False
 
     department_id: Optional[int] = None
     department_name: Optional[str] = None
@@ -284,7 +371,7 @@ class SearchResultItem(BaseModel):
     pdf_id: int
     original_filename: str
     page_number: int
-    relevance_score: int
+    relevance_score: float
     snippet: str
 
 
@@ -292,3 +379,69 @@ class SearchResponse(BaseModel):
     query: str
     total: int
     results: list[SearchResultItem]
+
+
+# ── Act children (tabs) ───────────────────────────────────────
+
+class ActChildDocument(BaseModel):
+    id: int
+    document_name: str
+    reference_number: Optional[str] = None
+    issue_date: Optional[date] = None
+    status: str
+    version_no: Optional[str] = None
+
+    # Shared optional fields
+    effective_from: Optional[date] = None
+    gazette_reference: Optional[str] = None
+    legal_authority: Optional[str] = None
+
+    # Act-specific
+    short_title: Optional[str] = None
+    act_year: Optional[int] = None
+    long_title: Optional[str] = None
+    regional_title: Optional[str] = None
+    notification_no: Optional[str] = None
+    act_code: Optional[str] = None
+    so_reason: Optional[str] = None
+    no_of_rules: Optional[int] = None
+    no_of_notifications: Optional[int] = None
+    no_of_regulations: Optional[int] = None
+    no_of_circulars: Optional[int] = None
+    no_of_statutes: Optional[int] = None
+    no_of_ordinances: Optional[int] = None
+    no_of_orders: Optional[int] = None
+    keywords: Optional[str] = None
+    is_repealed: bool = False
+
+    # Circular-specific
+    valid_until: Optional[date] = None
+
+    # Policy-specific
+    sector_domain: Optional[str] = None
+    implementing_agency: Optional[str] = None
+    next_review_date: Optional[date] = None
+
+    # Rules & Regulations-specific
+    rule_making_authority: Optional[str] = None
+
+    description: Optional[str] = None
+    summary: Optional[str] = None
+
+    department_id: Optional[int] = None
+    department_name: Optional[str] = None
+    document_type_id: Optional[int] = None
+    document_type_name: str
+
+    uploaded_by: int
+    uploader_username: Optional[str] = None
+    uploader_first_name: Optional[str] = None
+    uploader_last_name: Optional[str] = None
+    created_at: datetime
+
+    relationship_type: Optional[str] = None
+
+
+class ActChildrenResponse(BaseModel):
+    act_id: int
+    children: dict[str, list[ActChildDocument]]

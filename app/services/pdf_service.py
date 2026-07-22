@@ -92,6 +92,21 @@ class PDFService:
         tag_ids: Optional[list[int]] = None,
         relationships: Optional[list[RelationshipInput]] = None,
         description: Optional[str] = None,
+        act_year: Optional[int] = None,
+        long_title: Optional[str] = None,
+        regional_title: Optional[str] = None,
+        notification_no: Optional[str] = None,
+        act_code: Optional[str] = None,
+        so_reason: Optional[str] = None,
+        no_of_rules: Optional[int] = None,
+        no_of_notifications: Optional[int] = None,
+        no_of_regulations: Optional[int] = None,
+        no_of_circulars: Optional[int] = None,
+        no_of_statutes: Optional[int] = None,
+        no_of_ordinances: Optional[int] = None,
+        no_of_orders: Optional[int] = None,
+        keywords: Optional[str] = None,
+        is_repealed: bool = False,
     ) -> PDFDocument:
         file_path = os.path.join(settings.UPLOAD_DIR, file_ref)
         if not os.path.exists(file_path):
@@ -134,11 +149,26 @@ class PDFService:
             document_type_id=document_type_id,
             description=description,
             summary=summary,
+            act_year=act_year,
+            long_title=long_title,
+            regional_title=regional_title,
+            notification_no=notification_no,
+            act_code=act_code,
+            so_reason=so_reason,
+            no_of_rules=no_of_rules,
+            no_of_notifications=no_of_notifications,
+            no_of_regulations=no_of_regulations,
+            no_of_circulars=no_of_circulars,
+            no_of_statutes=no_of_statutes,
+            no_of_ordinances=no_of_ordinances,
+            no_of_orders=no_of_orders,
+            keywords=keywords,
+            is_repealed=is_repealed,
         )
 
-        if pages:
-            self._page_repo.save_pages(doc.id, pages)
-
+        # Save tags and relationships immediately after create (while session is clean).
+        # Page saving happens last because it loops over potentially hundreds of pages
+        # and any mid-loop exception must not roll back the relationship records.
         if tag_ids:
             self._tag_repo.save_document_tags(doc.id, tag_ids)
             doc.tags = [t for t in self._tag_repo.list_all() if t.id in tag_ids]
@@ -150,6 +180,12 @@ class PDFService:
                 type("R", (), {"pdf_id": r.pdf_id, "document_name": None, "type": r.type})()
                 for r in relationships
             ]
+
+        if pages:
+            try:
+                self._page_repo.save_pages(doc.id, pages)
+            except Exception:
+                pass  # FTS page indexing is best-effort; document + relationships already committed
 
         return doc
 
@@ -206,3 +242,27 @@ class PDFService:
 
     def get_all_department_links(self, status: str | None = None, department_id: int | None = None) -> list[dict]:
         return self._pdf_repo.get_all_department_links(status, department_id)
+
+    def get_documents_under_act(self, act_id: int) -> list[dict]:
+        return self._pdf_repo.get_documents_under_act(act_id)
+
+    def list_acts_by_department(self, dept_ids: str, skip: int, limit: int, status: Optional[str]) -> tuple[int, list]:
+        return self._pdf_repo.list_acts_by_department(dept_ids, skip, limit, status)
+
+    def list_docs_by_dept_and_type(self, dept_ids: str, doc_type_id: int, skip: int, limit: int, status: Optional[str]) -> tuple[int, list]:
+        return self._pdf_repo.list_docs_by_dept_and_type(dept_ids, doc_type_id, skip, limit, status)
+
+    def citizen_search(self, document_type_id: Optional[int], name_prefix: Optional[str], skip: int, limit: int) -> tuple[int, list]:
+        return self._pdf_repo.citizen_search(document_type_id, name_prefix, skip, limit)
+
+    def update_document(self, document_id: int, tag_ids: Optional[list] = None, relationships: Optional[list] = None, **fields) -> Optional[PDFDocument]:
+        doc = self._pdf_repo.update(document_id, **fields)
+        if doc is None:
+            return None
+        if tag_ids is not None:
+            self._tag_repo.save_document_tags(doc.id, tag_ids)
+            doc.tags = [t for t in self._tag_repo.list_all() if t.id in tag_ids]
+        if relationships is not None:
+            rels = [{"pdf_id": r.pdf_id, "type": r.type} for r in relationships]
+            self._pdf_repo.save_relationships(doc.id, rels)
+        return doc

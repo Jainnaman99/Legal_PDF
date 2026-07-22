@@ -9,6 +9,8 @@ from app.core.dependencies import get_audit_service, get_current_user, get_pdf_s
 from app.models.user import User
 from app.schemas.audit import AuditLogOut
 from app.schemas.pdf import (
+    ActChildDocument,
+    ActChildrenResponse,
     AllDepartmentLinkItem,
     DepartmentLinkItem,
     DocumentNameItem,
@@ -21,6 +23,7 @@ from app.schemas.pdf import (
     PDFCreateRequest,
     PDFListResponse,
     PDFReviewRequest,
+    PDFUpdateRequest,
     PDFUploadResponse,
     SearchResponse,
     SearchResultItem,
@@ -105,6 +108,21 @@ def create_document(
             tag_ids=body.tag_ids,
             relationships=body.relationships,
             description=body.description,
+            act_year=body.act_year,
+            long_title=body.long_title,
+            regional_title=body.regional_title,
+            notification_no=body.notification_no,
+            act_code=body.act_code,
+            so_reason=body.so_reason,
+            no_of_rules=body.no_of_rules,
+            no_of_notifications=body.no_of_notifications,
+            no_of_regulations=body.no_of_regulations,
+            no_of_circulars=body.no_of_circulars,
+            no_of_statutes=body.no_of_statutes,
+            no_of_ordinances=body.no_of_ordinances,
+            no_of_orders=body.no_of_orders,
+            keywords=body.keywords,
+            is_repealed=body.is_repealed,
         )
     except FileNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -219,17 +237,16 @@ def search_pdfs(
     q: str = Query(..., min_length=2, description="Word or phrase to search across all PDFs"),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
-    # current_user: User = Depends(get_current_user),  # public — no citizen auth
     service: PDFService = Depends(get_pdf_service),
 ):
     rows = service.search(q, skip, limit)
     results = [
         SearchResultItem(
-            pdf_id=r["pdf_document_id"],
+            pdf_id=r["pdf_id"],
             original_filename=r["original_filename"],
             page_number=r["page_number"],
             relevance_score=r["relevance_score"],
-            snippet=r["snippet"],
+            snippet=r["page_text"],
         )
         for r in rows
     ]
@@ -247,12 +264,118 @@ def list_my_documents(
     return PDFListResponse(total=total, documents=documents)
 
 
+_VALID_DOC_TYPES = {"Act", "Amendment", "Notification", "Circular", "Policy", "Rules & Regulations", "Order/Gazette"}
+_VALID_STATUSES = {"pending", "approved", "rejected"}
+
+
+@router.get("/my-department/acts", response_model=PDFListResponse, summary="List all Acts uploaded in the current user's department(s)")
+def list_acts_by_my_department(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=1000),
+    status: Optional[str] = Query(None, description="Filter by status: pending | approved | rejected"),
+    current_user: User = Depends(get_current_user),
+    service: PDFService = Depends(get_pdf_service),
+):
+    if not current_user.department_id:
+        raise HTTPException(status_code=400, detail="Your account has no department assigned")
+    if status and status not in _VALID_STATUSES:
+        raise HTTPException(status_code=400, detail="status must be one of: pending, approved, rejected")
+    total, documents = service.list_acts_by_department(current_user.department_id, skip, limit, status)
+    return PDFListResponse(total=total, documents=documents)
+
+
+@router.get(
+    "/my-department/by-type",
+    response_model=PDFListResponse,
+    summary="List documents of a given type uploaded in the current user's department(s)",
+)
+def list_docs_by_my_department_and_type(
+    doc_type_id: int = Query(..., description="document_types.id from the document types table"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=1000),
+    status: Optional[str] = Query(None, description="Filter by status: pending | approved | rejected"),
+    current_user: User = Depends(get_current_user),
+    service: PDFService = Depends(get_pdf_service),
+):
+    if not current_user.department_id:
+        raise HTTPException(status_code=400, detail="Your account has no department assigned")
+    if status and status not in _VALID_STATUSES:
+        raise HTTPException(status_code=400, detail="status must be one of: pending, approved, rejected")
+    total, documents = service.list_docs_by_dept_and_type(current_user.department_id, doc_type_id, skip, limit, status)
+    return PDFListResponse(total=total, documents=documents)
+
+
+@router.put("/{document_id}", response_model=PDFUploadResponse, summary="Update document metadata")
+def update_document(
+    document_id: int,
+    body: PDFUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    service: PDFService = Depends(get_pdf_service),
+):
+    doc = service.get_by_id(document_id)
+    if not doc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+    if doc.uploaded_by != current_user.id and not any(
+        r in (current_user.role.name if current_user.role else "") for r in ("admin", "super Admin")
+    ):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorised to edit this document")
+
+    updated = service.update_document(
+        document_id=document_id,
+        tag_ids=body.tag_ids,
+        relationships=body.relationships,
+        document_name=body.document_name,
+        reference_number=body.reference_number,
+        issue_date=body.issue_date,
+        effective_from=body.effective_from,
+        gazette_reference=body.gazette_reference,
+        legal_authority=body.legal_authority,
+        short_title=body.short_title,
+        valid_until=body.valid_until,
+        sector_domain=body.sector_domain,
+        implementing_agency=body.implementing_agency,
+        next_review_date=body.next_review_date,
+        rule_making_authority=body.rule_making_authority,
+        version_no=body.version_no,
+        department_id=body.department_id,
+        document_type_id=body.document_type_id,
+        description=body.description,
+        act_year=body.act_year,
+        long_title=body.long_title,
+        regional_title=body.regional_title,
+        notification_no=body.notification_no,
+        act_code=body.act_code,
+        so_reason=body.so_reason,
+        no_of_rules=body.no_of_rules,
+        no_of_notifications=body.no_of_notifications,
+        no_of_regulations=body.no_of_regulations,
+        no_of_circulars=body.no_of_circulars,
+        no_of_statutes=body.no_of_statutes,
+        no_of_ordinances=body.no_of_ordinances,
+        no_of_orders=body.no_of_orders,
+        keywords=body.keywords,
+        is_repealed=body.is_repealed,
+    )
+    return updated
+
+
+@router.get("/public/search", response_model=PDFListResponse, summary="Public citizen search — no token required")
+def citizen_search(
+    document_type_id: Optional[int] = Query(None, description="Filter by document type ID"),
+    name: Optional[str] = Query(None, description="Document name starts with"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    service: PDFService = Depends(get_pdf_service),
+):
+    total, documents = service.citizen_search(document_type_id, name, skip, limit)
+    return PDFListResponse(total=total, documents=documents)
+
+
 @router.get("/all", response_model=PDFListResponse)
 def list_all_documents(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=1000),
     status: Optional[str] = Query(None, description="Filter by status: pending | approved | rejected"),
-    # current_user: User = Depends(get_current_user),  # public — no citizen auth
     service: PDFService = Depends(get_pdf_service),
 ):
     if status and status not in ("pending", "approved", "rejected"):
@@ -457,10 +580,24 @@ def review_department_link(
     return {"ok": True, "link_id": body.link_id, "action": body.action}
 
 
+@router.get("/{pdf_id}/children", response_model=ActChildrenResponse, summary="Get all documents linked to an Act, grouped by document type (for tab rendering)")
+def get_act_children(
+    pdf_id: int,
+    service: PDFService = Depends(get_pdf_service),
+):
+    rows = service.get_documents_under_act(pdf_id)
+    grouped: dict[str, list[ActChildDocument]] = {}
+    for row in rows:
+        doc_type = row["document_type_name"]
+        grouped.setdefault(doc_type, []).append(ActChildDocument(**{
+            k: row[k] for k in ActChildDocument.model_fields if k in row
+        }))
+    return ActChildrenResponse(act_id=pdf_id, children=grouped)
+
+
 @router.get("/{document_id}/file", summary="Stream the original PDF file")
 def get_pdf_file(
     document_id: int,
-    # current_user: User = Depends(get_current_user),  # public — no citizen auth
     service: PDFService = Depends(get_pdf_service),
 ):
     doc = service.get_by_id(document_id)

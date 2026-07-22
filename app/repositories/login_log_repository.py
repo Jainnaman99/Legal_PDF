@@ -13,10 +13,7 @@ class LoginLogRepository(ILoginLogRepository):
 
     def log(self, user_id: int, action: str, ip_address: Optional[str] = None) -> None:
         self._db.execute(
-            text(
-                "EXEC sp_log_user_action "
-                "@user_id = :user_id, @action = :action, @ip_address = :ip_address"
-            ),
+            text("CALL sp_log_user_action(:user_id, :action, :ip_address)"),
             {"user_id": user_id, "action": action, "ip_address": ip_address},
         )
         self._db.commit()

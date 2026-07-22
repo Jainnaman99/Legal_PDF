@@ -14,12 +14,12 @@ class TagRepository(ITagRepository):
         self._db = db
 
     def list_all(self) -> list[Tag]:
-        result = self._db.execute(text("EXEC sp_list_tags"))
+        result = self._db.execute(text("CALL sp_list_tags()"))
         return [self._map_row(row) for row in result.mappings().fetchall()]
 
     def get_by_id(self, tag_id: int) -> Optional[Tag]:
         result = self._db.execute(
-            text("EXEC sp_get_tag_by_id @tag_id = :tag_id"),
+            text("CALL sp_get_tag_by_id(:tag_id)"),
             {"tag_id": tag_id},
         )
         row = result.mappings().fetchone()
@@ -28,7 +28,7 @@ class TagRepository(ITagRepository):
     def create(self, name: str, parent_id: Optional[int] = None) -> Tag:
         try:
             result = self._db.execute(
-                text("EXEC sp_create_tag @name = :name, @parent_id = :parent_id"),
+                text("CALL sp_create_tag(:name, :parent_id)"),
                 {"name": name, "parent_id": parent_id},
             )
             row = result.mappings().fetchone()
@@ -43,7 +43,7 @@ class TagRepository(ITagRepository):
             return
         tag_ids_str = ",".join(str(i) for i in tag_ids)
         self._db.execute(
-            text("EXEC sp_save_pdf_document_tags @pdf_id = :pdf_id, @tag_ids = :tag_ids"),
+            text("CALL sp_save_pdf_document_tags(:pdf_id, :tag_ids)"),
             {"pdf_id": pdf_id, "tag_ids": tag_ids_str},
         )
         self._db.commit()

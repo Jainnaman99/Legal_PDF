@@ -18,7 +18,7 @@ class UserRepository(IUserRepository):
 
     def get_by_id(self, user_id: int) -> Optional[User]:
         result = self._db.execute(
-            text("EXEC sp_get_user_by_id @user_id = :user_id"),
+            text("CALL sp_get_user_by_id(:user_id)"),
             {"user_id": user_id},
         )
         row = result.mappings().fetchone()
@@ -26,7 +26,7 @@ class UserRepository(IUserRepository):
 
     def get_by_id_for_auth(self, user_id: int) -> Optional[User]:
         result = self._db.execute(
-            text("EXEC sp_get_user_by_id @user_id = :user_id"),
+            text("CALL sp_get_user_by_id(:user_id)"),
             {"user_id": user_id},
         )
         row = result.mappings().fetchone()
@@ -34,7 +34,7 @@ class UserRepository(IUserRepository):
 
     def get_by_username(self, username: str) -> Optional[User]:
         result = self._db.execute(
-            text("EXEC sp_get_user_by_username @username = :username"),
+            text("CALL sp_get_user_by_username(:username)"),
             {"username": username},
         )
         row = result.mappings().fetchone()
@@ -42,7 +42,7 @@ class UserRepository(IUserRepository):
 
     def get_by_mobile(self, mobile_number: str) -> Optional[User]:
         result = self._db.execute(
-            text("EXEC sp_get_user_by_mobile @mobile_number = :mobile_number"),
+            text("CALL sp_get_user_by_mobile(:mobile_number)"),
             {"mobile_number": mobile_number},
         )
         row = result.mappings().fetchone()
@@ -50,7 +50,7 @@ class UserRepository(IUserRepository):
 
     def get_by_email(self, email: str) -> Optional[User]:
         result = self._db.execute(
-            text("EXEC sp_get_user_by_email @email = :email"),
+            text("CALL sp_get_user_by_email(:email)"),
             {"email": email},
         )
         row = result.mappings().fetchone()
@@ -69,14 +69,7 @@ class UserRepository(IUserRepository):
     ) -> User:
         try:
             result = self._db.execute(
-                text(
-                    "EXEC sp_create_user "
-                    "@username = :username, @email = :email, "
-                    "@hashed_password = :hashed_password, "
-                    "@first_name = :first_name, @last_name = :last_name, "
-                    "@role_id = :role_id, @department_id = :department_id, "
-                    "@mobile_number = :mobile_number"
-                ),
+                text("CALL sp_create_user(:username, :email, :hashed_password, :first_name, :last_name, :role_id, :department_id, :mobile_number)"),
                 {
                     "username": username,
                     "email": email,
@@ -94,9 +87,9 @@ class UserRepository(IUserRepository):
         except IntegrityError as e:
             self._db.rollback()
             err = str(e.orig).lower()
-            if "uq_users_username" in err:
+            if "uq_users_username" in err or "username" in err:
                 raise ValueError("Username is already taken")
-            if "uq_users_email" in err:
+            if "uq_users_email" in err or "email" in err:
                 raise ValueError("Email is already registered")
             raise ValueError("A user with this username or email already exists")
 
@@ -112,13 +105,7 @@ class UserRepository(IUserRepository):
     ) -> Optional[User]:
         try:
             result = self._db.execute(
-                text(
-                    "EXEC sp_update_user "
-                    "@user_id = :user_id, @first_name = :first_name, "
-                    "@last_name = :last_name, @email = :email, "
-                    "@is_active = :is_active, @role_id = :role_id, "
-                    "@department_id = :department_id"
-                ),
+                text("CALL sp_update_user(:user_id, :first_name, :last_name, :email, :is_active, :role_id, :department_id)"),
                 {
                     "user_id": user_id,
                     "first_name": first_name,
@@ -135,7 +122,7 @@ class UserRepository(IUserRepository):
         except IntegrityError as e:
             self._db.rollback()
             err = str(e.orig).lower()
-            if "uq_users_email" in err:
+            if "uq_users_email" in err or "email" in err:
                 raise ValueError("Email is already registered")
             raise ValueError("Update failed due to a conflict")
 
@@ -147,17 +134,14 @@ class UserRepository(IUserRepository):
         department_ids: Optional[str] = None,
     ) -> list[User]:
         result = self._db.execute(
-            text(
-                "EXEC sp_list_users @skip = :skip, @limit = :limit, "
-                "@exclude_user_id = :exclude_user_id, @department_ids = :department_ids"
-            ),
+            text("CALL sp_list_users(:skip, :limit, :exclude_user_id, :department_ids)"),
             {"skip": skip, "limit": limit, "exclude_user_id": exclude_user_id, "department_ids": department_ids},
         )
         return [self._map_row(row) for row in result.mappings().fetchall()]
 
     def change_password(self, user_id: int, hashed_password: str) -> None:
         self._db.execute(
-            text("EXEC sp_change_password @user_id = :user_id, @hashed_password = :hashed_password"),
+            text("CALL sp_change_password(:user_id, :hashed_password)"),
             {"user_id": user_id, "hashed_password": hashed_password},
         )
         self._db.commit()
