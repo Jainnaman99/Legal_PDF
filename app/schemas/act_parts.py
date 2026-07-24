@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Literal
 
 from pydantic import BaseModel
 
@@ -111,3 +111,60 @@ class AllActPartsResponse(BaseModel):
     annexures: List[EntryOut] = []
     appendices: List[EntryOut] = []
     forms: List[EntryOut] = []
+    approvals: List["ActPartApprovalOut"] = []
+
+
+# ── Approval ───────────────────────────────────────────────────────────────────
+
+PartType = Literal["sections", "schedule", "annexure", "appendix", "forms"]
+
+class ActPartApprovalOut(BaseModel):
+    id: int
+    pdf_document_id: int
+    part_type: str
+    status: str                         # 'pending' | 'approved' | 'rejected'
+    submitted_by: int
+    submitted_at: Optional[datetime]
+    reviewed_by: Optional[int] = None
+    reviewed_at: Optional[datetime] = None
+    comments: Optional[str] = None
+    submitter_username: Optional[str] = None
+    submitter_first_name: Optional[str] = None
+    submitter_last_name: Optional[str] = None
+    reviewer_username: Optional[str] = None
+    reviewer_first_name: Optional[str] = None
+    reviewer_last_name: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class ActPartPendingItem(BaseModel):
+    """Extended approval row returned in the approver's pending queue — includes act metadata."""
+    id: int
+    pdf_document_id: int
+    part_type: str
+    status: str
+    submitted_by: int
+    submitted_at: Optional[datetime]
+    reviewed_by: Optional[int] = None
+    reviewed_at: Optional[datetime] = None
+    comments: Optional[str] = None
+    submitter_username: Optional[str] = None
+    submitter_first_name: Optional[str] = None
+    submitter_last_name: Optional[str] = None
+    act_name: Optional[str] = None
+    act_type: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class ActPartReviewRequest(BaseModel):
+    pdf_document_id: int
+    part_type: PartType
+    action: Literal["approved", "rejected"]
+    comments: Optional[str] = None
+
+
+AllActPartsResponse.model_rebuild()

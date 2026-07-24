@@ -31,3 +31,24 @@ class IActPartsRepository(ABC):
 
     @abstractmethod
     def get_all_parts(self, pdf_document_id: int) -> dict: ...
+
+    @abstractmethod
+    def submit_for_approval(self, pdf_document_id: int, part_type: str, submitted_by: int) -> dict: ...
+
+    @abstractmethod
+    def review_act_parts(
+        self, pdf_document_id: int, part_type: str,
+        reviewed_by: int, action: str, comments: Optional[str],
+    ) -> dict: ...
+
+    @abstractmethod
+    def get_approvals(self, pdf_document_id: int) -> list[dict]: ...
+
+    @abstractmethod
+    def list_pending(self) -> list[dict]: ...
+
+    @abstractmethod
+    def list_my_submissions(self, submitted_by: int) -> list[dict]: ...
+
+    @abstractmethod
+    def list_all_submissions(self) -> list[dict]: ...

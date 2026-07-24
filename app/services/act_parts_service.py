@@ -6,7 +6,9 @@ from typing import Optional
 from app.core.config import settings
 from app.interfaces.act_parts_repository import IActPartsRepository
 from app.schemas.act_parts import (
+    ActPartApprovalOut,
     ActPartFileUploadResponse,
+    ActPartPendingItem,
     AllActPartsResponse,
     ChapterOut,
     EntryOut,
@@ -274,6 +276,7 @@ class ActPartsService:
             ]
 
         chapters = sorted(chapters_map.values(), key=lambda c: c.display_order)
+        approvals = [ActPartApprovalOut(**r) for r in self._repo.get_approvals(pdf_document_id)]
         return AllActPartsResponse(
             pdf_document_id=pdf_document_id,
             has_chapters=len(chapters) > 0,
@@ -283,4 +286,32 @@ class ActPartsService:
             annexures=_to_entry_out(data.get("annexures", [])),
             appendices=_to_entry_out(data.get("appendices", [])),
             forms=_to_entry_out(data.get("forms", [])),
+            approvals=approvals,
         )
+
+    # ── Approval ──────────────────────────────────────────────────────────────
+
+    def submit_for_approval(self, pdf_document_id: int, part_type: str, user_id: int) -> ActPartApprovalOut:
+        row = self._repo.submit_for_approval(pdf_document_id, part_type, user_id)
+        return ActPartApprovalOut(**row)
+
+    def review_act_parts(
+        self, pdf_document_id: int, part_type: str,
+        reviewer_id: int, action: str, comments,
+    ) -> ActPartApprovalOut:
+        if action not in ("approved", "rejected"):
+            raise ValueError("action must be 'approved' or 'rejected'")
+        row = self._repo.review_act_parts(pdf_document_id, part_type, reviewer_id, action, comments)
+        return ActPartApprovalOut(**row)
+
+    def get_approvals(self, pdf_document_id: int) -> list[ActPartApprovalOut]:
+        return [ActPartApprovalOut(**r) for r in self._repo.get_approvals(pdf_document_id)]
+
+    def list_pending(self) -> list[ActPartPendingItem]:
+        return [ActPartPendingItem(**r) for r in self._repo.list_pending()]
+
+    def list_my_submissions(self, user_id: int) -> list[ActPartPendingItem]:
+        return [ActPartPendingItem(**r) for r in self._repo.list_my_submissions(user_id)]
+
+    def list_all_submissions(self) -> list[ActPartPendingItem]:
+        return [ActPartPendingItem(**r) for r in self._repo.list_all_submissions()]

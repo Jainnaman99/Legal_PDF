@@ -125,6 +125,99 @@ class ActPartsRepository(IActPartsRepository):
             ).mappings().fetchall()
         ]
 
+    def submit_for_approval(self, pdf_document_id: int, part_type: str, submitted_by: int) -> dict:
+        result = self._db.execute(
+            text("CALL sp_submit_act_parts(:doc_id, :ptype, :uid)"),
+            {"doc_id": pdf_document_id, "ptype": part_type, "uid": submitted_by},
+        ).mappings().fetchone()
+        self._db.commit()
+        return dict(result) if result else {}
+
+    def review_act_parts(
+        self, pdf_document_id: int, part_type: str,
+        reviewed_by: int, action: str, comments,
+    ) -> dict:
+        result = self._db.execute(
+            text("CALL sp_review_act_parts(:doc_id, :ptype, :uid, :action, :comments)"),
+            {"doc_id": pdf_document_id, "ptype": part_type, "uid": reviewed_by, "action": action, "comments": comments},
+        ).mappings().fetchone()
+        self._db.commit()
+        return dict(result) if result else {}
+
+    def get_approvals(self, pdf_document_id: int) -> list[dict]:
+        rows = self._db.execute(
+            text(
+                "SELECT a.id, a.pdf_document_id, a.part_type, a.status, a.submitted_by, "
+                "a.submitted_at, a.reviewed_by, a.reviewed_at, a.comments, "
+                "u.username AS submitter_username, u.first_name AS submitter_first_name, "
+                "u.last_name AS submitter_last_name, "
+                "r.username AS reviewer_username, r.first_name AS reviewer_first_name, "
+                "r.last_name AS reviewer_last_name "
+                "FROM act_part_approvals a "
+                "JOIN users u ON u.id = a.submitted_by "
+                "LEFT JOIN users r ON r.id = a.reviewed_by "
+                "WHERE a.pdf_document_id = :doc_id "
+                "ORDER BY FIELD(a.part_type,'sections','schedule','annexure','appendix','forms')"
+            ),
+            {"doc_id": pdf_document_id},
+        ).mappings().fetchall()
+        return [dict(r) for r in rows]
+
+    def list_pending(self) -> list[dict]:
+        rows = self._db.execute(
+            text(
+                "SELECT a.id, a.pdf_document_id, a.part_type, a.status, a.submitted_by, "
+                "a.submitted_at, a.reviewed_by, a.reviewed_at, a.comments, "
+                "u.username AS submitter_username, u.first_name AS submitter_first_name, "
+                "u.last_name AS submitter_last_name, "
+                "d.document_name AS act_name, dt.name AS act_type "
+                "FROM act_part_approvals a "
+                "JOIN users u ON u.id = a.submitted_by "
+                "JOIN pdf_documents d ON d.id = a.pdf_document_id "
+                "LEFT JOIN document_types dt ON dt.id = d.document_type_id "
+                "WHERE a.status = 'pending' ORDER BY a.submitted_at ASC"
+            )
+        ).mappings().fetchall()
+        return [dict(r) for r in rows]
+
+    def list_my_submissions(self, submitted_by: int) -> list[dict]:
+        rows = self._db.execute(
+            text(
+                "SELECT a.id, a.pdf_document_id, a.part_type, a.status, a.submitted_by, "
+                "a.submitted_at, a.reviewed_by, a.reviewed_at, a.comments, "
+                "r.username AS reviewer_username, r.first_name AS reviewer_first_name, "
+                "r.last_name AS reviewer_last_name, "
+                "d.document_name AS act_name, dt.name AS act_type "
+                "FROM act_part_approvals a "
+                "LEFT JOIN users r ON r.id = a.reviewed_by "
+                "JOIN pdf_documents d ON d.id = a.pdf_document_id "
+                "LEFT JOIN document_types dt ON dt.id = d.document_type_id "
+                "WHERE a.submitted_by = :uid ORDER BY a.submitted_at DESC"
+            ),
+            {"uid": submitted_by},
+        ).mappings().fetchall()
+        return [dict(r) for r in rows]
+
+    def list_all_submissions(self) -> list[dict]:
+        rows = self._db.execute(
+            text(
+                "SELECT a.id, a.pdf_document_id, a.part_type, a.status, a.submitted_by, "
+                "a.submitted_at, a.reviewed_by, a.reviewed_at, a.comments, "
+                "u.username AS submitter_username, u.first_name AS submitter_first_name, "
+                "u.last_name AS submitter_last_name, "
+                "r.username AS reviewer_username, r.first_name AS reviewer_first_name, "
+                "r.last_name AS reviewer_last_name, "
+                "d.document_name AS act_name, dt.name AS act_type "
+                "FROM act_part_approvals a "
+                "JOIN users u ON u.id = a.submitted_by "
+                "JOIN pdf_documents d ON d.id = a.pdf_document_id "
+                "LEFT JOIN document_types dt ON dt.id = d.document_type_id "
+                "LEFT JOIN users r ON r.id = a.reviewed_by "
+                "ORDER BY a.submitted_at DESC"
+            )
+        ).mappings().fetchall()
+        return [dict(r) for r in rows]
+
     def get_all_parts(self, pdf_document_id: int) -> dict:
         def _q(sql: str) -> list[dict]:
             return [

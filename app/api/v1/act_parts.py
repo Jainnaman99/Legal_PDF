@@ -3,10 +3,13 @@ import os
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from fastapi.responses import FileResponse
 
-from app.core.dependencies import get_act_parts_service, get_current_user
+from app.core.dependencies import get_act_parts_service, get_current_user, require_roles
 from app.models.user import User
 from app.schemas.act_parts import (
+    ActPartApprovalOut,
     ActPartFileUploadResponse,
+    ActPartPendingItem,
+    ActPartReviewRequest,
     AllActPartsResponse,
     EntryOut,
     SaveEntriesRequest,
@@ -19,6 +22,7 @@ from app.services.act_parts_service import ActPartsService, _ACT_PARTS_SUBDIR
 router = APIRouter(prefix="/act-parts", tags=["Act Parts"])
 
 _FLAT_TYPES = {"schedule", "annexure", "appendix", "forms"}
+_approver_roles = require_roles("approver", "admin", "super Admin", "nodal Officer")
 
 
 @router.post(
@@ -176,6 +180,93 @@ def save_forms(
 @router.get("/{pdf_document_id}/forms", response_model=list[EntryOut], summary="Get form entries")
 def get_forms(pdf_document_id: int, service: ActPartsService = Depends(get_act_parts_service)):
     return service.get_entries("forms", pdf_document_id)
+
+
+# ── Approval endpoints (must come before /{pdf_document_id} catch-all) ────────
+
+@router.get(
+    "/approvals/pending",
+    response_model=list[ActPartPendingItem],
+    summary="List all pending act-part submissions (approver only)",
+)
+def list_pending_act_parts(
+    current_user: User = Depends(_approver_roles),
+    service: ActPartsService = Depends(get_act_parts_service),
+):
+    return service.list_pending()
+
+
+@router.get(
+    "/approvals/all",
+    response_model=list[ActPartPendingItem],
+    summary="List all act-part submissions regardless of status (approver/nodal officer)",
+)
+def list_all_act_part_submissions(
+    current_user: User = Depends(_approver_roles),
+    service: ActPartsService = Depends(get_act_parts_service),
+):
+    return service.list_all_submissions()
+
+
+@router.get(
+    "/approvals/my-submissions",
+    response_model=list[ActPartPendingItem],
+    summary="List current user's own act-part submissions",
+)
+def list_my_submissions(
+    current_user: User = Depends(get_current_user),
+    service: ActPartsService = Depends(get_act_parts_service),
+):
+    return service.list_my_submissions(current_user.id)
+
+
+@router.post(
+    "/approvals/review",
+    response_model=ActPartApprovalOut,
+    summary="Approve or reject an act-part submission (approver only)",
+)
+def review_act_parts(
+    body: ActPartReviewRequest,
+    current_user: User = Depends(_approver_roles),
+    service: ActPartsService = Depends(get_act_parts_service),
+):
+    try:
+        return service.review_act_parts(
+            body.pdf_document_id, body.part_type,
+            current_user.id, body.action, body.comments,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
+
+
+@router.post(
+    "/{pdf_document_id}/{part_type}/submit",
+    response_model=ActPartApprovalOut,
+    summary="Submit an act-part tab for approval",
+)
+def submit_act_part(
+    pdf_document_id: int,
+    part_type: str,
+    current_user: User = Depends(get_current_user),
+    service: ActPartsService = Depends(get_act_parts_service),
+):
+    valid_types = {"sections", "schedule", "annexure", "appendix", "forms"}
+    if part_type not in valid_types:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid part_type: {part_type}")
+    return service.submit_for_approval(pdf_document_id, part_type, current_user.id)
+
+
+@router.get(
+    "/{pdf_document_id}/approvals",
+    response_model=list[ActPartApprovalOut],
+    summary="Get approval status for all tabs of an Act",
+)
+def get_act_part_approvals(
+    pdf_document_id: int,
+    current_user: User = Depends(get_current_user),
+    service: ActPartsService = Depends(get_act_parts_service),
+):
+    return service.get_approvals(pdf_document_id)
 
 
 @router.get(
