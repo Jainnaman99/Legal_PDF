@@ -85,14 +85,25 @@ class ActPartsRepository(IActPartsRepository):
             ).mappings().fetchall()
         ]
 
-        # Build chapter_rows (joined shape the service expects)
+        # Build chapter_rows: one row per (chapter, section) pair.
+        # Chapters with zero sections still need a row so the service can create the ChapterOut object.
         chapter_map = {c["chapter_id"]: c for c in chapters}
-        chapter_rows: list[dict] = []
+        sections_by_chapter: dict[int, list[dict]] = {}
         for sec in sections:
             ch_id = sec.get("chapter_id")
-            if ch_id and ch_id in chapter_map:
-                ch = chapter_map[ch_id]
-                chapter_rows.append({**ch, **sec})
+            if ch_id:
+                sections_by_chapter.setdefault(ch_id, []).append(sec)
+
+        chapter_rows: list[dict] = []
+        for ch in chapters:
+            ch_id = ch["chapter_id"]
+            ch_secs = sections_by_chapter.get(ch_id, [])
+            if ch_secs:
+                for sec in ch_secs:
+                    chapter_rows.append({**ch, **sec})
+            else:
+                # Chapter with no sections — include it with null section fields
+                chapter_rows.append({**ch, "section_id": None})
 
         flat_rows = [s for s in sections if not s.get("chapter_id")]
 
