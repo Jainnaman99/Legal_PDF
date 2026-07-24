@@ -1,4 +1,7 @@
+import os
+
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi.responses import FileResponse
 
 from app.core.dependencies import get_act_parts_service, get_current_user
 from app.models.user import User
@@ -10,7 +13,8 @@ from app.schemas.act_parts import (
     SaveSectionsRequest,
     SectionsResponse,
 )
-from app.services.act_parts_service import ActPartsService
+from app.core.config import settings
+from app.services.act_parts_service import ActPartsService, _ACT_PARTS_SUBDIR
 
 router = APIRouter(prefix="/act-parts", tags=["Act Parts"])
 
@@ -32,6 +36,36 @@ async def upload_file(
     if not content:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Uploaded file is empty")
     return service.store_file(file.filename or "upload", content)
+
+
+_MIME = {
+    ".pdf":  "application/pdf",
+    ".doc":  "application/msword",
+    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+}
+
+
+@router.get(
+    "/file/{file_ref}",
+    summary="Serve an uploaded act-part file inline (opens in browser)",
+)
+def serve_file(
+    file_ref: str,
+    current_user: User = Depends(get_current_user),
+):
+    # Reject any path traversal attempts
+    if "/" in file_ref or "\\" in file_ref or ".." in file_ref:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid file reference")
+    file_path = os.path.join(settings.UPLOAD_DIR, _ACT_PARTS_SUBDIR, file_ref)
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
+    ext = os.path.splitext(file_ref)[1].lower()
+    media_type = _MIME.get(ext, "application/octet-stream")
+    return FileResponse(
+        file_path,
+        media_type=media_type,
+        headers={"Content-Disposition": "inline"},
+    )
 
 
 @router.post(

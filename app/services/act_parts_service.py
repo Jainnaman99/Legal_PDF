@@ -128,14 +128,16 @@ class ActPartsService:
                     sections=[],
                 )
             if ch_id and row.get("section_id"):
+                fp = row.get("file_path") or ""
                 chapters_map[ch_id].sections.append(SectionOut(
                     id=row["section_id"],
                     section_number=row.get("section_number"),
                     section_title=row.get("section_title"),
                     section_content=row.get("section_content"),
-                    file_path=row.get("file_path"),
+                    file_path=fp,
                     file_size=row.get("file_size"),
                     original_filename=row.get("original_filename"),
+                    file_ref=os.path.basename(fp) or None,
                     display_order=row.get("section_order", 0),
                 ))
 
@@ -147,9 +149,10 @@ class ActPartsService:
                 section_number=r.get("section_number"),
                 section_title=r.get("section_title"),
                 section_content=r.get("section_content"),
-                file_path=r.get("file_path"),
+                file_path=r.get("file_path") or "",
                 file_size=r.get("file_size"),
                 original_filename=r.get("original_filename"),
+                file_ref=os.path.basename(r.get("file_path") or "") or None,
                 display_order=r.get("section_order", r.get("display_order", 0)),
             )
             for r in flat_rows
@@ -196,9 +199,10 @@ class ActPartsService:
                 entry_number=r.get("entry_number"),
                 title=r.get("title"),
                 description=r.get("description"),
-                file_path=r.get("file_path"),
+                file_path=r.get("file_path") or "",
                 file_size=r.get("file_size"),
                 original_filename=r.get("original_filename"),
+                file_ref=os.path.basename(r.get("file_path") or "") or None,
                 display_order=r.get("display_order", 0),
                 created_at=r.get("created_at"),
             )
@@ -222,14 +226,16 @@ class ActPartsService:
             )
         for row in data.get("sections", []):
             ch_id = row.get("chapter_id")
+            fp = row.get("file_path") or ""
             sec_out = SectionOut(
                 id=row["id"],
                 section_number=row.get("section_number"),
                 section_title=row.get("section_title"),
                 section_content=row.get("section_content"),
-                file_path=row.get("file_path"),
+                file_path=fp,
                 file_size=row.get("file_size"),
                 original_filename=row.get("original_filename"),
+                file_ref=os.path.basename(fp) or None,
                 display_order=row.get("display_order", 0),
             )
             if ch_id and ch_id in chapters_map:
@@ -241,9 +247,10 @@ class ActPartsService:
                 section_number=r.get("section_number"),
                 section_title=r.get("section_title"),
                 section_content=r.get("section_content"),
-                file_path=r.get("file_path"),
+                file_path=r.get("file_path") or "",
                 file_size=r.get("file_size"),
                 original_filename=r.get("original_filename"),
+                file_ref=os.path.basename(r.get("file_path") or "") or None,
                 display_order=r.get("display_order", 0),
             )
             for r in data.get("sections", [])
@@ -257,9 +264,10 @@ class ActPartsService:
                     entry_number=r.get("entry_number"),
                     title=r.get("title"),
                     description=r.get("description"),
-                    file_path=r.get("file_path"),
+                    file_path=r.get("file_path") or "",
                     file_size=r.get("file_size"),
                     original_filename=r.get("original_filename"),
+                    file_ref=os.path.basename(r.get("file_path") or "") or None,
                     display_order=r.get("display_order", 0),
                 )
                 for r in rows

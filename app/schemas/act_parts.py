@@ -45,6 +45,7 @@ class SectionOut(BaseModel):
     file_path: Optional[str]
     file_size: Optional[int]
     original_filename: Optional[str]
+    file_ref: Optional[str] = None   # basename of file_path — used by frontend to open the file
     display_order: int
 
     class Config:
@@ -91,6 +92,7 @@ class EntryOut(BaseModel):
     file_path: Optional[str]
     file_size: Optional[int]
     original_filename: Optional[str]
+    file_ref: Optional[str] = None   # basename of file_path — used by frontend to open the file
     display_order: int
     created_at: Optional[datetime] = None
 

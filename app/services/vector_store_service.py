@@ -1,5 +1,3 @@
-import chromadb
-
 from app.core.config import settings
 from app.services.embedding_service import EmbeddingService
 
@@ -17,12 +15,13 @@ class VectorStoreService:
 
     @staticmethod
     def _make_client():
+        import chromadb  # lazy — so a broken chromadb install doesn't crash startup
+
         try:
             return chromadb.PersistentClient(path=settings.CHROMA_DIR)
         except AttributeError:
-            # chromadb 0.6.x Rust backend bug: stale SharedSystemClient from a prior
-            # hot-reload holds a broken RustBindingsAPI with no 'bindings' attr.
-            # Clear the registry so the next call starts clean.
+            # chromadb 0.6.x Rust backend bug: stale SharedSystemClient on hot-reload.
+            # Clear the registry and retry once.
             try:
                 from chromadb.api.shared_system_client import SharedSystemClient
                 if hasattr(SharedSystemClient, "_identifier_to_system"):
