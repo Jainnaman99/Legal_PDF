@@ -1,4 +1,3 @@
-from functools import lru_cache
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -112,9 +111,19 @@ def get_pdf_approval_repository(db: Session = Depends(get_db)) -> IPDFApprovalRe
     return PDFApprovalRepository(db)
 
 
-@lru_cache(maxsize=1)
-def _get_vector_store() -> VectorStoreService:
-    return VectorStoreService()
+_vs_instance: "VectorStoreService | None" = None
+_vs_tried = False
+
+
+def _get_vector_store() -> "VectorStoreService | None":
+    global _vs_instance, _vs_tried
+    if not _vs_tried:
+        try:
+            _vs_instance = VectorStoreService()
+        except Exception:
+            _vs_instance = None
+        _vs_tried = True
+    return _vs_instance
 
 
 def get_rag_service() -> RAGService:

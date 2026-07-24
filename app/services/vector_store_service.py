@@ -8,12 +8,28 @@ _COLLECTION = "legal_pdf_pages"
 
 class VectorStoreService:
     def __init__(self):
-        self._client = chromadb.PersistentClient(path=settings.CHROMA_DIR)
+        self._client = self._make_client()
         self._col = self._client.get_or_create_collection(
             _COLLECTION,
             metadata={"hnsw:space": "cosine"},
         )
         self._embedder = EmbeddingService()
+
+    @staticmethod
+    def _make_client():
+        try:
+            return chromadb.PersistentClient(path=settings.CHROMA_DIR)
+        except AttributeError:
+            # chromadb 0.6.x Rust backend bug: stale SharedSystemClient from a prior
+            # hot-reload holds a broken RustBindingsAPI with no 'bindings' attr.
+            # Clear the registry so the next call starts clean.
+            try:
+                from chromadb.api.shared_system_client import SharedSystemClient
+                if hasattr(SharedSystemClient, "_identifier_to_system"):
+                    SharedSystemClient._identifier_to_system.clear()
+            except Exception:
+                pass
+            return chromadb.PersistentClient(path=settings.CHROMA_DIR)
 
     def index_pages(
         self,

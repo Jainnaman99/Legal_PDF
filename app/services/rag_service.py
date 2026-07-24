@@ -12,10 +12,15 @@ _SYSTEM_PROMPT = (
 
 
 class RAGService:
-    def __init__(self, vector_store: VectorStoreService):
+    def __init__(self, vector_store: "VectorStoreService | None"):
         self._vs = vector_store
 
     def answer(self, question: str, top_k: int = 5) -> dict:
+        if self._vs is None:
+            return {
+                "answer": "Semantic search is temporarily unavailable (vector store not initialized).",
+                "sources": [],
+            }
         chunks = self._vs.search(question, top_k)
         if not chunks:
             return {

@@ -69,16 +69,20 @@ class ActPartsService:
                 for sec in ch.sections:
                     fp, fs, fn = self._resolve_file_ref(sec.file_ref)
                     sections_list.append({
+                        "id":               sec.id,
                         "section_number":   sec.section_number or "",
                         "section_title":    sec.section_title or "",
                         "section_content":  sec.section_content or "",
                         "file_path":        fp or "",
                         "file_size":        fs,
                         "original_filename": fn or "",
+                        "is_deleted":       1 if sec.is_deleted else 0,
                     })
                 chapters_list.append({
+                    "id":             ch.id,
                     "chapter_number": ch.chapter_number or "",
                     "chapter_title":  ch.chapter_title or "",
+                    "is_deleted":     1 if ch.is_deleted else 0,
                     "sections":       sections_list,
                 })
             self._repo.save_sections(
@@ -90,12 +94,14 @@ class ActPartsService:
             for sec in (body.flat_sections or []):
                 fp, fs, fn = self._resolve_file_ref(sec.file_ref)
                 flat_list.append({
-                    "section_number":    sec.section_number or "",
-                    "section_title":     sec.section_title or "",
-                    "section_content":   sec.section_content or "",
-                    "file_path":         fp or "",
-                    "file_size":         fs,
+                    "id":              sec.id,
+                    "section_number":  sec.section_number or "",
+                    "section_title":   sec.section_title or "",
+                    "section_content": sec.section_content or "",
+                    "file_path":       fp or "",
+                    "file_size":       fs,
                     "original_filename": fn or "",
+                    "is_deleted":      1 if sec.is_deleted else 0,
                 })
             self._repo.save_sections(
                 pdf_document_id, user_id, False,
@@ -166,12 +172,14 @@ class ActPartsService:
         for entry in body.entries:
             fp, fs, fn = self._resolve_file_ref(entry.file_ref)
             entries_list.append({
-                "entry_number":     entry.entry_number or "",
-                "title":            entry.title or "",
-                "description":      entry.description or "",
-                "file_path":        fp or "",
-                "file_size":        fs,
+                "id":              entry.id,
+                "entry_number":    entry.entry_number or "",
+                "title":           entry.title or "",
+                "description":     entry.description or "",
+                "file_path":       fp or "",
+                "file_size":       fs,
                 "original_filename": fn or "",
+                "is_deleted":      1 if entry.is_deleted else 0,
             })
 
         self._repo.save_entries(sp_type, pdf_document_id, user_id, json.dumps(entries_list, ensure_ascii=False))

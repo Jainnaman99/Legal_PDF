@@ -15,16 +15,20 @@ class ActPartFileUploadResponse(BaseModel):
 # ── Sections ───────────────────────────────────────────────────────────────────
 
 class SectionInput(BaseModel):
+    id: Optional[int] = None               # None = new row; set = existing row to upsert
     section_number: Optional[str] = None
     section_title: Optional[str] = None
     section_content: Optional[str] = None
     file_ref: Optional[str] = None          # from /upload-file step
+    is_deleted: bool = False
 
 
 class ChapterInput(BaseModel):
+    id: Optional[int] = None               # None = new row; set = existing row to upsert
     chapter_number: Optional[str] = None
     chapter_title: Optional[str] = None
     sections: List[SectionInput] = []
+    is_deleted: bool = False
 
 
 class SaveSectionsRequest(BaseModel):
@@ -67,10 +71,12 @@ class SectionsResponse(BaseModel):
 # ── Schedule / Annexure / Appendix / Form (shared shape) ──────────────────────
 
 class EntryInput(BaseModel):
+    id: Optional[int] = None               # None = new row; set = existing row to upsert
     entry_number: Optional[str] = None
     title: Optional[str] = None
     description: Optional[str] = None
     file_ref: Optional[str] = None          # from /upload-file step
+    is_deleted: bool = False
 
 
 class SaveEntriesRequest(BaseModel):
