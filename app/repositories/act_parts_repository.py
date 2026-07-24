@@ -66,7 +66,7 @@ class ActPartsRepository(IActPartsRepository):
             dict(r)
             for r in self._db.execute(
                 text(
-                    "SELECT id AS chapter_id, chapter_number, chapter_title, display_order AS chapter_order "
+                    "SELECT id AS chapter_id, chapter_number, chapter_title, display_order AS chapter_order, status "
                     "FROM act_part_chapters WHERE pdf_document_id = :doc_id AND is_deleted = 0 ORDER BY display_order"
                 ),
                 {"doc_id": pdf_document_id},
@@ -78,7 +78,7 @@ class ActPartsRepository(IActPartsRepository):
             for r in self._db.execute(
                 text(
                     "SELECT id AS section_id, chapter_id, section_number, section_title, "
-                    "section_content, file_path, file_size, original_filename, display_order AS section_order "
+                    "section_content, file_path, file_size, original_filename, display_order AS section_order, status "
                     "FROM act_part_sections WHERE pdf_document_id = :doc_id AND is_deleted = 0 ORDER BY display_order"
                 ),
                 {"doc_id": pdf_document_id},
@@ -118,7 +118,7 @@ class ActPartsRepository(IActPartsRepository):
             for r in self._db.execute(
                 text(
                     f"SELECT id, entry_number, title, description, file_path, file_size, "
-                    f"original_filename, display_order, created_at "
+                    f"original_filename, display_order, created_at, status "
                     f"FROM {tbl} WHERE pdf_document_id = :doc_id AND is_deleted = 0 ORDER BY display_order"
                 ),
                 {"doc_id": pdf_document_id},
@@ -226,18 +226,18 @@ class ActPartsRepository(IActPartsRepository):
             ]
 
         chapters = _q(
-            "SELECT id, chapter_number, chapter_title, display_order "
+            "SELECT id, chapter_number, chapter_title, display_order, status "
             "FROM act_part_chapters WHERE pdf_document_id = :doc_id AND is_deleted = 0 ORDER BY display_order"
         )
         sections = _q(
             "SELECT id, chapter_id, section_number, section_title, section_content, "
-            "file_path, file_size, original_filename, display_order "
+            "file_path, file_size, original_filename, display_order, status "
             "FROM act_part_sections WHERE pdf_document_id = :doc_id AND is_deleted = 0 ORDER BY display_order"
         )
-        schedules  = _q("SELECT id, entry_number, title, description, file_path, file_size, original_filename, display_order FROM act_part_schedules  WHERE pdf_document_id = :doc_id AND is_deleted = 0 ORDER BY display_order")
-        annexures  = _q("SELECT id, entry_number, title, description, file_path, file_size, original_filename, display_order FROM act_part_annexures  WHERE pdf_document_id = :doc_id AND is_deleted = 0 ORDER BY display_order")
-        appendices = _q("SELECT id, entry_number, title, description, file_path, file_size, original_filename, display_order FROM act_part_appendices WHERE pdf_document_id = :doc_id AND is_deleted = 0 ORDER BY display_order")
-        forms      = _q("SELECT id, entry_number, title, description, file_path, file_size, original_filename, display_order FROM act_part_forms      WHERE pdf_document_id = :doc_id AND is_deleted = 0 ORDER BY display_order")
+        schedules  = _q("SELECT id, entry_number, title, description, file_path, file_size, original_filename, display_order, status FROM act_part_schedules  WHERE pdf_document_id = :doc_id AND is_deleted = 0 ORDER BY display_order")
+        annexures  = _q("SELECT id, entry_number, title, description, file_path, file_size, original_filename, display_order, status FROM act_part_annexures  WHERE pdf_document_id = :doc_id AND is_deleted = 0 ORDER BY display_order")
+        appendices = _q("SELECT id, entry_number, title, description, file_path, file_size, original_filename, display_order, status FROM act_part_appendices WHERE pdf_document_id = :doc_id AND is_deleted = 0 ORDER BY display_order")
+        forms      = _q("SELECT id, entry_number, title, description, file_path, file_size, original_filename, display_order, status FROM act_part_forms      WHERE pdf_document_id = :doc_id AND is_deleted = 0 ORDER BY display_order")
 
         return {
             "chapters":   chapters,

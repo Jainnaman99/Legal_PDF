@@ -47,6 +47,7 @@ class SectionOut(BaseModel):
     original_filename: Optional[str]
     file_ref: Optional[str] = None   # basename of file_path — used by frontend to open the file
     display_order: int
+    status: Optional[str] = None     # draft | pending | approved | rejected
 
     class Config:
         from_attributes = True
@@ -58,6 +59,7 @@ class ChapterOut(BaseModel):
     chapter_title: Optional[str]
     display_order: int
     sections: List[SectionOut] = []
+    status: Optional[str] = None     # draft | pending | approved | rejected
 
     class Config:
         from_attributes = True
@@ -95,6 +97,7 @@ class EntryOut(BaseModel):
     file_ref: Optional[str] = None   # basename of file_path — used by frontend to open the file
     display_order: int
     created_at: Optional[datetime] = None
+    status: Optional[str] = None     # draft | pending | approved | rejected
 
     class Config:
         from_attributes = True

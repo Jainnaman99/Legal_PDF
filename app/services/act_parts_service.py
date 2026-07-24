@@ -128,6 +128,7 @@ class ActPartsService:
                     chapter_title=row.get("chapter_title"),
                     display_order=row.get("chapter_order", 0),
                     sections=[],
+                    status=row.get("status"),
                 )
             if ch_id and row.get("section_id"):
                 fp = row.get("file_path") or ""
@@ -141,6 +142,7 @@ class ActPartsService:
                     original_filename=row.get("original_filename"),
                     file_ref=os.path.basename(fp) or None,
                     display_order=row.get("section_order", 0),
+                    status=row.get("status"),
                 ))
 
         chapters = sorted(chapters_map.values(), key=lambda c: c.display_order)
@@ -156,6 +158,7 @@ class ActPartsService:
                 original_filename=r.get("original_filename"),
                 file_ref=os.path.basename(r.get("file_path") or "") or None,
                 display_order=r.get("section_order", r.get("display_order", 0)),
+                status=r.get("status"),
             )
             for r in flat_rows
         ]
@@ -207,6 +210,7 @@ class ActPartsService:
                 file_ref=os.path.basename(r.get("file_path") or "") or None,
                 display_order=r.get("display_order", 0),
                 created_at=r.get("created_at"),
+                status=r.get("status"),
             )
             for r in rows
         ]
@@ -225,6 +229,7 @@ class ActPartsService:
                 chapter_title=row.get("chapter_title"),
                 display_order=row.get("display_order", 0),
                 sections=[],
+                status=row.get("status"),
             )
         for row in data.get("sections", []):
             ch_id = row.get("chapter_id")
@@ -239,6 +244,7 @@ class ActPartsService:
                 original_filename=row.get("original_filename"),
                 file_ref=os.path.basename(fp) or None,
                 display_order=row.get("display_order", 0),
+                status=row.get("status"),
             )
             if ch_id and ch_id in chapters_map:
                 chapters_map[ch_id].sections.append(sec_out)
@@ -254,6 +260,7 @@ class ActPartsService:
                 original_filename=r.get("original_filename"),
                 file_ref=os.path.basename(r.get("file_path") or "") or None,
                 display_order=r.get("display_order", 0),
+                status=r.get("status"),
             )
             for r in data.get("sections", [])
             if not r.get("chapter_id")
@@ -271,6 +278,7 @@ class ActPartsService:
                     original_filename=r.get("original_filename"),
                     file_ref=os.path.basename(r.get("file_path") or "") or None,
                     display_order=r.get("display_order", 0),
+                    status=r.get("status"),
                 )
                 for r in rows
             ]
