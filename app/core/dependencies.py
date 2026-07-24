@@ -5,6 +5,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.interfaces.act_parts_repository import IActPartsRepository
 from app.interfaces.act_structure_repository import IActStructureRepository
 from app.interfaces.admin_otp_repository import IAdminOtpRepository
 from app.interfaces.audit_log_repository import IAuditLogRepository
@@ -19,6 +20,7 @@ from app.interfaces.role_repository import IRoleRepository
 from app.interfaces.tag_repository import ITagRepository
 from app.interfaces.user_repository import IUserRepository
 from app.models.user import User
+from app.repositories.act_parts_repository import ActPartsRepository
 from app.repositories.act_structure_repository import ActStructureRepository
 from app.repositories.admin_otp_repository import AdminOtpRepository
 from app.repositories.audit_log_repository import AuditLogRepository
@@ -32,6 +34,7 @@ from app.repositories.reset_otp_repository import ResetOtpRepository
 from app.repositories.role_repository import RoleRepository
 from app.repositories.tag_repository import TagRepository
 from app.repositories.user_repository import UserRepository
+from app.services.act_parts_service import ActPartsService
 from app.services.act_structure_service import ActStructureService
 from app.services.admin_auth_service import AdminAuthService
 from app.services.audit_service import AuditService
@@ -184,6 +187,10 @@ def require_roles(*roles: str):
             )
         return current_user
     return _check
+
+
+def get_act_parts_service(db: Session = Depends(get_db)) -> ActPartsService:
+    return ActPartsService(ActPartsRepository(db))
 
 
 def get_act_structure_repository(db: Session = Depends(get_db)) -> IActStructureRepository:
