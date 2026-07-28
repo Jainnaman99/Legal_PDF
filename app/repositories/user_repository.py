@@ -148,13 +148,20 @@ class UserRepository(IUserRepository):
 
     @staticmethod
     def _build_departments(dept_id_str, department_name_raw, department_description):
-        """Parse dept_id_str ('1' or '1,2') and pipe-separated names into Department list."""
+        """Parse dept_id_str ('1' or '1,2') and pipe-separated names into Department list.
+
+        The SP returns names via GROUP_CONCAT ORDER BY id ASC, so we must sort the
+        raw id CSV numerically before zipping — otherwise ids and names are mismatched
+        when the CSV is not already in ascending order.
+        """
         if not dept_id_str or not department_name_raw:
             return [], None
-        ids = [i.strip() for i in dept_id_str.split(',')]
+        ids = [i.strip() for i in dept_id_str.split(',') if i.strip()]
         names = department_name_raw.split('|')
+        # Sort ids numerically to align with SP's ORDER BY CAST(id AS UNSIGNED)
+        sorted_ids = sorted(ids, key=lambda x: int(x) if x.isdigit() else 0)
         departments = []
-        for did, dname in zip(ids, names):
+        for did, dname in zip(sorted_ids, names):
             try:
                 departments.append(Department(id=int(did), name=dname, description=department_description or None, is_active=True))
             except (ValueError, TypeError):

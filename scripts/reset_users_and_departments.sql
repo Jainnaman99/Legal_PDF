@@ -115,7 +115,8 @@ INSERT INTO departments (name, is_active, created_at) VALUES
 ('Food, Civil Supplies & Consumer Affairs (F&CS)', 1, NOW()),
 ('Sports Department', 1, NOW()),
 ('Haryana Income Enhancement Board', 1, NOW()),
-('Central Committee of Examinations', 1, NOW());
+('Central Committee of Examinations', 1, NOW()),
+('Chief Secretary to Govt. of Haryana', 1, NOW());
 
 SET FOREIGN_KEY_CHECKS = 1;
 
