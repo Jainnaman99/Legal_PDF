@@ -1,27 +1,25 @@
 -- ============================================================
--- Admin login via mobile OTP
+-- Admin login via mobile OTP  (MySQL)
 --
 -- Creates admin_login_otps table and supporting stored procedures.
--- Only users with role admin / super_admin may use this flow.
+-- Only users with role admin / super Admin may use this flow.
+--
+-- Run: mysql -u root -p Legal_PDF < scripts/add_admin_login_otp.sql
 -- ============================================================
-
-USE Legal_PDF;
-GO
 
 -- ─────────────────────────────────────────────
 -- 1. Table
 -- ─────────────────────────────────────────────
 
-IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'admin_login_otps')
-CREATE TABLE dbo.admin_login_otps (
-    id          INT IDENTITY(1,1) PRIMARY KEY,
-    user_id     INT          NOT NULL REFERENCES dbo.users(id),
-    otp_hash    NVARCHAR(64) NOT NULL,
-    expires_at  DATETIME2    NOT NULL,
-    is_used     BIT          NOT NULL DEFAULT 0,
-    created_at  DATETIME2    NOT NULL DEFAULT GETUTCDATE()
-);
-GO
+CREATE TABLE IF NOT EXISTS admin_login_otps (
+    id          INT UNSIGNED    NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    user_id     INT UNSIGNED    NOT NULL,
+    otp_hash    VARCHAR(64)     NOT NULL,
+    expires_at  DATETIME        NOT NULL,
+    is_used     TINYINT(1)      NOT NULL DEFAULT 0,
+    created_at  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_alo_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ─────────────────────────────────────────────
 -- 2. sp_create_admin_login_otp
@@ -29,55 +27,64 @@ GO
 --    the user before inserting the new one.
 -- ─────────────────────────────────────────────
 
-CREATE OR ALTER PROCEDURE dbo.sp_create_admin_login_otp
-    @user_id    INT,
-    @otp_hash   NVARCHAR(64),
-    @expires_at DATETIME2
-AS
+DROP PROCEDURE IF EXISTS sp_create_admin_login_otp;
+DELIMITER ;;
+CREATE PROCEDURE sp_create_admin_login_otp(
+    IN p_user_id    INT UNSIGNED,
+    IN p_otp_hash   VARCHAR(64),
+    IN p_expires_at DATETIME
+)
 BEGIN
-    SET NOCOUNT ON;
-
-    UPDATE dbo.admin_login_otps
+    UPDATE admin_login_otps
     SET    is_used = 1
-    WHERE  user_id = @user_id AND is_used = 0;
+    WHERE  user_id = p_user_id AND is_used = 0;
 
-    INSERT INTO dbo.admin_login_otps (user_id, otp_hash, expires_at)
-    VALUES (@user_id, @otp_hash, @expires_at);
-END;
-GO
+    INSERT INTO admin_login_otps (user_id, otp_hash, expires_at)
+    VALUES (p_user_id, p_otp_hash, p_expires_at);
+
+    SELECT 'ok' AS result;
+END ;;
+DELIMITER ;
 
 -- ─────────────────────────────────────────────
 -- 3. sp_get_valid_admin_login_otp
 -- ─────────────────────────────────────────────
 
-CREATE OR ALTER PROCEDURE dbo.sp_get_valid_admin_login_otp
-    @user_id INT
-AS
+DROP PROCEDURE IF EXISTS sp_get_valid_admin_login_otp;
+DELIMITER ;;
+CREATE PROCEDURE sp_get_valid_admin_login_otp(
+    IN p_user_id INT UNSIGNED
+)
 BEGIN
-    SET NOCOUNT ON;
-    SELECT TOP 1 id, otp_hash, expires_at
-    FROM   dbo.admin_login_otps
-    WHERE  user_id   = @user_id
+    SELECT id, otp_hash, expires_at
+    FROM   admin_login_otps
+    WHERE  user_id   = p_user_id
       AND  is_used   = 0
-      AND  expires_at > GETUTCDATE()
-    ORDER  BY created_at DESC;
-END;
-GO
+      AND  expires_at > UTC_TIMESTAMP()
+    ORDER  BY created_at DESC
+    LIMIT  1;
+END ;;
+DELIMITER ;
 
 -- ─────────────────────────────────────────────
 -- 4. sp_mark_admin_login_otp_used
 -- ─────────────────────────────────────────────
 
-CREATE OR ALTER PROCEDURE dbo.sp_mark_admin_login_otp_used
-    @otp_id INT
-AS
+DROP PROCEDURE IF EXISTS sp_mark_admin_login_otp_used;
+DELIMITER ;;
+CREATE PROCEDURE sp_mark_admin_login_otp_used(
+    IN p_otp_id INT UNSIGNED
+)
 BEGIN
-    SET NOCOUNT ON;
-    UPDATE dbo.admin_login_otps
+    UPDATE admin_login_otps
     SET    is_used = 1
-    WHERE  id = @otp_id;
-END;
-GO
+    WHERE  id = p_otp_id;
 
-PRINT 'Migration add_admin_login_otp completed successfully.';
-GO
+    SELECT 'ok' AS result;
+END ;;
+DELIMITER ;
+
+-- ─────────────────────────────────────────────
+-- Verification
+-- ─────────────────────────────────────────────
+SELECT 'admin_login_otps table and stored procedures created successfully.' AS status;
