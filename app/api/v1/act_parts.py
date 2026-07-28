@@ -57,10 +57,16 @@ def serve_file(
     file_ref: str,
     current_user: User = Depends(get_current_user),
 ):
-    # Reject any path traversal attempts
-    if "/" in file_ref or "\\" in file_ref or ".." in file_ref:
+    # Reject path traversal: file_ref must be a plain filename, no directory components.
+    # Normalise Windows separators first so the check works on any host OS.
+    safe_ref = file_ref.replace("\\", "/")
+    if "/" in safe_ref or ".." in safe_ref:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid file reference")
-    file_path = os.path.join(settings.UPLOAD_DIR, _ACT_PARTS_SUBDIR, file_ref)
+    # Primary location: act_parts sub-directory (current storage location)
+    file_path = os.path.join(settings.UPLOAD_DIR, _ACT_PARTS_SUBDIR, safe_ref)
+    if not os.path.exists(file_path):
+        # Fallback: main uploads directory (files uploaded before sub-directory was introduced)
+        file_path = os.path.join(settings.UPLOAD_DIR, safe_ref)
     if not os.path.exists(file_path):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
     ext = os.path.splitext(file_ref)[1].lower()

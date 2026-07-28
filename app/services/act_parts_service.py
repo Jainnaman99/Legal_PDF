@@ -21,6 +21,12 @@ from app.schemas.act_parts import (
 # Sub-directory inside UPLOAD_DIR for act-part files
 _ACT_PARTS_SUBDIR = "act_parts"
 
+
+def _fp_basename(file_path: str) -> Optional[str]:
+    """Extract the filename from a stored file_path, normalising both Windows (\\)
+    and Unix (/) separators so it works regardless of which OS wrote the path."""
+    return os.path.basename((file_path or "").replace("\\", "/")) or None
+
 # Maps tab key (from frontend) to SP part_type argument
 PART_TYPE_MAP = {
     "schedule":  "schedule",
@@ -51,14 +57,25 @@ class ActPartsService:
         )
 
     def _resolve_file_ref(self, file_ref: Optional[str]) -> tuple[Optional[str], Optional[int], Optional[str]]:
-        """Return (file_path, file_size, original_filename) for a file_ref, or (None,None,None)."""
+        """Return (file_path, file_size, original_filename) for a file_ref, or (None,None,None).
+        Checks the act_parts sub-directory first, then falls back to the main uploads dir so that
+        files uploaded before the sub-directory was introduced are still found."""
         if not file_ref:
             return None, None, None
-        full_path = os.path.join(settings.UPLOAD_DIR, _ACT_PARTS_SUBDIR, file_ref)
+        # file_ref may arrive as a full stored path (e.g. "uploads\\filename") — extract basename
+        # and normalise separators so it works on both Windows and Linux hosts.
+        basename = os.path.basename(file_ref.replace("\\", "/"))
+        if not basename:
+            return None, None, None
+        # Primary: act_parts sub-directory (current storage location)
+        full_path = os.path.join(settings.UPLOAD_DIR, _ACT_PARTS_SUBDIR, basename)
+        if not os.path.exists(full_path):
+            # Fallback: main uploads directory (legacy storage location)
+            full_path = os.path.join(settings.UPLOAD_DIR, basename)
         if not os.path.exists(full_path):
             return None, None, None
         size = os.path.getsize(full_path)
-        original = "_".join(file_ref.split("_")[1:]) if "_" in file_ref else file_ref
+        original = "_".join(basename.split("_")[1:]) if "_" in basename else basename
         return full_path, size, original
 
     # ── Sections ───────────────────────────────────────────────────────────────
@@ -140,7 +157,7 @@ class ActPartsService:
                     file_path=fp,
                     file_size=row.get("file_size"),
                     original_filename=row.get("original_filename"),
-                    file_ref=os.path.basename(fp) or None,
+                    file_ref=_fp_basename(fp),
                     display_order=row.get("section_order", 0),
                     status=row.get("status"),
                 ))
@@ -156,7 +173,7 @@ class ActPartsService:
                 file_path=r.get("file_path") or "",
                 file_size=r.get("file_size"),
                 original_filename=r.get("original_filename"),
-                file_ref=os.path.basename(r.get("file_path") or "") or None,
+                file_ref=_fp_basename(r.get("file_path") or ""),
                 display_order=r.get("section_order", r.get("display_order", 0)),
                 status=r.get("status"),
             )
@@ -207,7 +224,7 @@ class ActPartsService:
                 file_path=r.get("file_path") or "",
                 file_size=r.get("file_size"),
                 original_filename=r.get("original_filename"),
-                file_ref=os.path.basename(r.get("file_path") or "") or None,
+                file_ref=_fp_basename(r.get("file_path") or ""),
                 display_order=r.get("display_order", 0),
                 created_at=r.get("created_at"),
                 status=r.get("status"),
@@ -242,7 +259,7 @@ class ActPartsService:
                 file_path=fp,
                 file_size=row.get("file_size"),
                 original_filename=row.get("original_filename"),
-                file_ref=os.path.basename(fp) or None,
+                file_ref=_fp_basename(fp),
                 display_order=row.get("display_order", 0),
                 status=row.get("status"),
             )
@@ -258,7 +275,7 @@ class ActPartsService:
                 file_path=r.get("file_path") or "",
                 file_size=r.get("file_size"),
                 original_filename=r.get("original_filename"),
-                file_ref=os.path.basename(r.get("file_path") or "") or None,
+                file_ref=_fp_basename(r.get("file_path") or ""),
                 display_order=r.get("display_order", 0),
                 status=r.get("status"),
             )
@@ -276,7 +293,7 @@ class ActPartsService:
                     file_path=r.get("file_path") or "",
                     file_size=r.get("file_size"),
                     original_filename=r.get("original_filename"),
-                    file_ref=os.path.basename(r.get("file_path") or "") or None,
+                    file_ref=_fp_basename(r.get("file_path") or ""),
                     display_order=r.get("display_order", 0),
                     status=r.get("status"),
                 )
