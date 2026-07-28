@@ -634,8 +634,11 @@ def get_pdf_file(
     doc = service.get_by_id(document_id)
     if not doc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
-    fp = doc.file_path if os.path.isabs(doc.file_path) else os.path.join(
-        settings.UPLOAD_DIR, os.path.basename(doc.file_path)
+    # Normalise Windows-style separators before extracting basename so this works
+    # on Linux hosts even when the path was stored on a Windows dev machine.
+    _stored = doc.file_path.replace("\\", "/")
+    fp = _stored if os.path.isabs(_stored) else os.path.join(
+        settings.UPLOAD_DIR, os.path.basename(_stored)
     )
     if not os.path.exists(fp):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found on server")
