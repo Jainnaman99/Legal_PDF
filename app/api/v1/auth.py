@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 logger = logging.getLogger(__name__)
 
 from app.core.dependencies import get_audit_service, get_auth_service, get_current_user, get_reset_service
+from app.core.rsa_keys import decrypt_login_payload
 from app.core.security import decode_access_token
 from app.models.user import User
 from app.schemas.auth import (
@@ -56,11 +57,24 @@ def login(
     audit: AuditService = Depends(get_audit_service),
 ):
     ip = get_client_ip(request)
-    token = service.login(body.username, body.password, ip)
+    if body.encrypted_payload:
+        try:
+            data = decrypt_login_payload(body.encrypted_payload)
+            username = data.get("username", "")
+            password = data.get("password", "")
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid encrypted payload",
+            )
+    else:
+        username = body.username or ""
+        password = body.password or ""
+    token = service.login(username, password, ip)
     if not token:
         audit.log(
             "login_failed", "auth",
-            details={"username": body.username},
+            details={"username": username},
             ip_address=ip,
             status="failure",
         )
@@ -71,7 +85,7 @@ def login(
         )
     payload = decode_access_token(token)
     actor_id = int(payload["sub"]) if payload and "sub" in payload else None
-    audit.log("login", "auth", actor_user_id=actor_id, entity_id=actor_id, details={"username": body.username}, ip_address=ip)
+    audit.log("login", "auth", actor_user_id=actor_id, entity_id=actor_id, details={"username": username}, ip_address=ip)
     return TokenResponse(access_token=token)
 
 

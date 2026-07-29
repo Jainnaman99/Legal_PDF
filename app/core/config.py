@@ -16,6 +16,10 @@ class Settings(BaseSettings):
 
     UPLOAD_DIR: str = "uploads"
 
+    # RSA private key for decrypting login payloads (base64-encoded PEM).
+    # Generate with: python scripts/generate_rsa_keys.py
+    LOGIN_RSA_PRIVATE_KEY: str = ""
+
     # Ollama — local LLM for PDF summarisation and embeddings
     OLLAMA_HOST:  str = "http://localhost:11434"
     OLLAMA_MODEL: str = "llama3.2"   # any model pulled via `ollama pull <model>`

@@ -4,8 +4,9 @@ from pydantic import BaseModel, EmailStr
 
 
 class LoginRequest(BaseModel):
-    username: str
-    password: str
+    username: Optional[str] = None
+    password: Optional[str] = None
+    encrypted_payload: Optional[str] = None
 
 
 class TokenResponse(BaseModel):
