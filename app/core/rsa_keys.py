@@ -1,7 +1,7 @@
 import base64
 import json
 
-from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding as asym_padding
 
 
@@ -21,12 +21,6 @@ _private_key = _load_private_key()
 
 def decrypt_login_payload(encrypted_b64: str) -> dict:
     ciphertext = base64.b64decode(encrypted_b64)
-    plaintext = _private_key.decrypt(
-        ciphertext,
-        asym_padding.OAEP(
-            mgf=asym_padding.MGF1(algorithm=hashes.SHA256()),
-            algorithm=hashes.SHA256(),
-            label=None,
-        ),
-    )
+    # jsencrypt uses PKCS1v15 padding
+    plaintext = _private_key.decrypt(ciphertext, asym_padding.PKCS1v15())
     return json.loads(plaintext.decode())
