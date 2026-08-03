@@ -34,7 +34,7 @@ class DepartmentOut(BaseModel):
 class UserOut(BaseModel):
     id: int
     username: str
-    email: str
+    email: Optional[str] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     is_active: bool
