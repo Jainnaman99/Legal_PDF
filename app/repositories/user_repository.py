@@ -146,6 +146,18 @@ class UserRepository(IUserRepository):
         )
         self._db.commit()
 
+    def count_by_dept_and_role(self, dept_id: int, role_id: int) -> int:
+        row = self._db.execute(
+            text(
+                "SELECT COUNT(*) AS cnt FROM users "
+                "WHERE role_id = :role_id "
+                "AND FIND_IN_SET(:dept_id, IFNULL(department_id, '')) > 0 "
+                "AND is_active = 1"
+            ),
+            {"role_id": role_id, "dept_id": str(dept_id)},
+        ).mappings().fetchone()
+        return int(row["cnt"]) if row else 0
+
     @staticmethod
     def _build_departments(dept_id_str, department_name_raw, department_description):
         """Parse dept_id_str ('1' or '1,2') and pipe-separated names into Department list.

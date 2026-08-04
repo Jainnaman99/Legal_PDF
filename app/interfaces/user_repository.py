@@ -66,3 +66,7 @@ class IUserRepository(ABC):
     @abstractmethod
     def change_password(self, user_id: int, hashed_password: str) -> None:
         ...
+
+    @abstractmethod
+    def count_by_dept_and_role(self, dept_id: int, role_id: int) -> int:
+        ...

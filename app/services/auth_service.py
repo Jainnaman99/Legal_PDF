@@ -5,6 +5,8 @@ from app.interfaces.login_log_repository import ILoginLogRepository
 from app.interfaces.user_repository import IUserRepository
 from app.models.user import User
 
+_MAX_USERS_PER_DEPT_ROLE = 2
+
 
 class AuthService:
 
@@ -23,6 +25,15 @@ class AuthService:
         department_id: Optional[str] = None,
         mobile_number: Optional[str] = None,
     ) -> User:
+        if role_id and department_id:
+            dept_ids = [d.strip() for d in department_id.split(",") if d.strip().isdigit()]
+            for dept_id in dept_ids:
+                count = self._user_repo.count_by_dept_and_role(int(dept_id), role_id)
+                if count >= _MAX_USERS_PER_DEPT_ROLE:
+                    raise ValueError(
+                        f"Department already has the maximum of {_MAX_USERS_PER_DEPT_ROLE} "
+                        f"active users for this role."
+                    )
         return self._user_repo.create(
             username, email, hash_password(password),
             first_name, last_name, role_id, department_id, mobile_number,
