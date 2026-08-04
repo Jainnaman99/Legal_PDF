@@ -146,16 +146,18 @@ class UserRepository(IUserRepository):
         )
         self._db.commit()
 
-    def count_by_dept_and_role(self, dept_id: int, role_id: int) -> int:
-        row = self._db.execute(
-            text(
-                "SELECT COUNT(*) AS cnt FROM users "
-                "WHERE role_id = :role_id "
-                "AND FIND_IN_SET(:dept_id, IFNULL(department_id, '')) > 0 "
-                "AND is_active = 1"
-            ),
-            {"role_id": role_id, "dept_id": str(dept_id)},
-        ).mappings().fetchone()
+    def count_by_dept_and_role(self, dept_id: int, role_id: int, exclude_user_id: Optional[int] = None) -> int:
+        sql = (
+            "SELECT COUNT(*) AS cnt FROM users "
+            "WHERE role_id = :role_id "
+            "AND FIND_IN_SET(:dept_id, IFNULL(department_id, '')) > 0 "
+            "AND is_active = 1"
+        )
+        params: dict = {"role_id": role_id, "dept_id": str(dept_id)}
+        if exclude_user_id is not None:
+            sql += " AND id != :exclude_id"
+            params["exclude_id"] = exclude_user_id
+        row = self._db.execute(text(sql), params).mappings().fetchone()
         return int(row["cnt"]) if row else 0
 
     @staticmethod

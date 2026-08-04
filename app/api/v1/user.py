@@ -8,6 +8,8 @@ from app.services.audit_service import AuditService
 from app.services.department_service import DepartmentService
 from app.utils.request_utils import get_client_ip
 
+_MAX_USERS_PER_DEPT_ROLE = 2
+
 router = APIRouter(prefix="/users", tags=["Users"])
 
 _manage_users = require_roles("super Admin", "admin", "nodal Officer")
@@ -121,6 +123,19 @@ def update_user(
         changes["role_id"] = {"old": target.role_id, "new": body.role_id}
     if body.department_id is not None and body.department_id != target.department_id:
         changes["department_id"] = {"old": target.department_id, "new": body.department_id}
+
+    # Resolve the effective role and department after the update
+    effective_role_id = body.role_id if body.role_id is not None else target.role_id
+    effective_dept_id = body.department_id if body.department_id is not None else target.department_id
+    if effective_role_id and effective_dept_id:
+        dept_ids = [d.strip() for d in str(effective_dept_id).split(",") if d.strip().isdigit()]
+        for dept_id in dept_ids:
+            count = repo.count_by_dept_and_role(int(dept_id), effective_role_id, exclude_user_id=body.user_id)
+            if count >= _MAX_USERS_PER_DEPT_ROLE:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"Department already has the maximum of {_MAX_USERS_PER_DEPT_ROLE} active users for this role.",
+                )
 
     try:
         user = repo.update(
