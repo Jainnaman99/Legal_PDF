@@ -130,7 +130,7 @@ def forgot_password(
 ):
     ip = get_client_ip(request)
     try:
-        channel = service.request_otp(body.identifier)
+        result = service.request_otp(body.identifier)
     except ValueError as exc:
         audit.log("forgot_password_failed", "auth", details={"identifier": body.identifier, "error": str(exc)}, ip_address=ip, status="failure")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
@@ -140,9 +140,10 @@ def forgot_password(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Could not send OTP. Please try again later.",
         )
+    channel = result["channel"]
     audit.log("forgot_password", "auth", details={"identifier": body.identifier, "channel": channel}, ip_address=ip)
     masked = _mask_identifier(body.identifier)
-    return {"message": f"OTP sent to your {channel} ({masked})", "channel": channel}
+    return {"message": f"OTP generated for your {channel} ({masked})", "channel": channel, "otp": result["otp"]}
 
 
 @router.post("/reset-password", response_model=TokenResponse)

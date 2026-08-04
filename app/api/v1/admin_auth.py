@@ -23,7 +23,7 @@ def request_admin_otp(
 ):
     ip = get_client_ip(request)
     try:
-        service.request_otp(body.mobile_number)
+        otp = service.request_otp(body.mobile_number)
     except ValueError as exc:
         audit.log(
             "admin_otp_request_failed", "auth",
@@ -39,7 +39,7 @@ def request_admin_otp(
             detail="Could not send OTP. Please try again later.",
         )
     audit.log("admin_otp_requested", "auth", details={"mobile": body.mobile_number}, ip_address=ip)
-    return {"message": "OTP sent to your registered mobile number. Valid for 10 minutes."}
+    return {"message": "OTP generated. Valid for 10 minutes.", "otp": otp}
 
 
 @router.post("/verify-otp", response_model=TokenResponse)

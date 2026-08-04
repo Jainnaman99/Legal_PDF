@@ -32,9 +32,9 @@ class AdminAuthService:
     def _hash_otp(otp: str) -> str:
         return hashlib.sha256(otp.encode()).hexdigest()
 
-    def request_otp(self, mobile_number: str) -> None:
+    def request_otp(self, mobile_number: str) -> str:
         """
-        Generate and send a login OTP to the given mobile number.
+        Generate a login OTP for the given mobile number and return it.
         Raises ValueError if the number is not linked to an active admin account.
         """
         user = self._user_repo.get_by_mobile(mobile_number.strip())
@@ -47,6 +47,7 @@ class AdminAuthService:
         expires_at = datetime.now(timezone.utc) + timedelta(minutes=_OTP_TTL_MINUTES)
         self._otp_repo.create(user.id, self._hash_otp(otp), expires_at)
         self._sms_svc.send_admin_login_otp(mobile_number, otp)
+        return otp
 
     def verify_otp(self, mobile_number: str, otp: str) -> Optional[str]:
         """

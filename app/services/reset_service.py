@@ -45,10 +45,10 @@ class ResetService:
 
     # ── public API ────────────────────────────────────────────
 
-    def request_otp(self, identifier: str) -> str:
+    def request_otp(self, identifier: str) -> dict:
         """
-        Generate and send a 6-digit OTP.
-        Returns the channel used ('email' | 'sms').
+        Generate a 6-digit OTP.
+        Returns {"channel": "email"|"sms", "otp": "123456"}.
         Raises ValueError if no active account is found for the identifier.
         """
         user = self._find_user(identifier)
@@ -62,13 +62,13 @@ class ResetService:
         if "@" in identifier:
             self._otp_repo.create(user.id, self._hash_otp(otp), "email", expires_at)
             self._email_svc.send_otp(user.email, user.username, otp)
-            return "email"
+            return {"channel": "email", "otp": otp}
         else:
             if not user.mobile_number:
                 raise ValueError("No mobile number registered for this account. Please contact the administrator.")
             self._otp_repo.create(user.id, self._hash_otp(otp), "sms", expires_at)
             self._sms_svc.send_otp(user.mobile_number, otp)
-            return "sms"
+            return {"channel": "sms", "otp": otp}
 
     def verify_and_reset(self, identifier: str, otp: str, new_password: str) -> Optional[str]:
         """
