@@ -30,6 +30,7 @@ from app.schemas.pdf import (
     SearchResultItem,
 )
 from app.schemas.semantic_search import SemanticSearchResponse
+from app.repositories.pdf_repository import PDFRepository
 from app.services.act_parts_service import ActPartsService
 from app.services.audit_service import AuditService
 from app.services.pdf_service import PDFService
@@ -666,11 +667,15 @@ def get_act_full_detail(
     if not doc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="ACT document not found")
 
-    # Group related/child documents by their document type name
+    # Group related/child documents by their document type name (all relationship types)
     related_documents: dict[str, list[ActChildDocument]] = {}
-    for row in pdf_service.get_documents_under_act(act_id):
+    for row in pdf_service.get_act_full_related_docs(act_id):
         type_name = row.get("document_type_name") or "Other"
-        related_documents.setdefault(type_name, []).append(ActChildDocument(**row))
+        child = ActChildDocument(
+            **{k: v for k, v in row.items() if k != "tags"},
+            tags=PDFRepository._parse_tags(row.get("tags")),
+        )
+        related_documents.setdefault(type_name, []).append(child)
 
     # Fetch all ACT parts (chapters, sections, schedules, annexures, appendices, forms)
     act_parts = parts_service.get_all_parts(act_id)

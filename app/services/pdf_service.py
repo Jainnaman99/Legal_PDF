@@ -261,6 +261,9 @@ class PDFService:
     def get_documents_under_act(self, act_id: int) -> list[dict]:
         return self._pdf_repo.get_documents_under_act(act_id)
 
+    def get_act_full_related_docs(self, act_id: int) -> list[dict]:
+        return self._pdf_repo.get_act_full_related_docs(act_id)
+
     def list_acts_by_department(self, dept_ids: str, skip: int, limit: int, status: Optional[str]) -> tuple[int, list]:
         return self._pdf_repo.list_acts_by_department(dept_ids, skip, limit, status)
 

@@ -319,6 +319,13 @@ class PDFRepository(IPDFRepository):
         )
         return [dict(row) for row in result.mappings().fetchall()]
 
+    def get_act_full_related_docs(self, act_id: int) -> list[dict]:
+        result = self._db.execute(
+            text("CALL sp_get_act_full_related_docs(:act_id)"),
+            {"act_id": act_id},
+        )
+        return [dict(row) for row in result.mappings().fetchall()]
+
     def save_relationships(self, pdf_id: int, relationships: list[dict]) -> None:
         if not relationships:
             return

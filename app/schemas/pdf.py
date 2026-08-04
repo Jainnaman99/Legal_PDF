@@ -441,6 +441,7 @@ class ActChildDocument(BaseModel):
     created_at: datetime
 
     relationship_type: Optional[str] = None
+    tags: list[TagRef] = []
 
 
 class ActChildrenResponse(BaseModel):
