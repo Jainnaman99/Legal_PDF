@@ -5,12 +5,13 @@ from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, Upl
 from fastapi.responses import FileResponse
 
 from app.core.config import settings
-from app.core.dependencies import get_audit_service, get_current_user, get_pdf_service, get_rag_service, require_roles
+from app.core.dependencies import get_act_parts_service, get_audit_service, get_current_user, get_pdf_service, get_rag_service, require_roles
 from app.models.user import User
 from app.schemas.audit import AuditLogOut
 from app.schemas.pdf import (
     ActChildDocument,
     ActChildrenResponse,
+    ActFullDetailResponse,
     AllDepartmentLinkItem,
     DepartmentLinkItem,
     DocumentNameItem,
@@ -29,6 +30,7 @@ from app.schemas.pdf import (
     SearchResultItem,
 )
 from app.schemas.semantic_search import SemanticSearchResponse
+from app.services.act_parts_service import ActPartsService
 from app.services.audit_service import AuditService
 from app.services.pdf_service import PDFService
 from app.services.rag_service import RAGService
@@ -648,3 +650,79 @@ def get_pdf_file(
         if ext == ".docx" else "application/pdf"
     )
     return FileResponse(fp, media_type=media_type, filename=doc.original_filename or "document", content_disposition_type="inline")
+
+
+@router.get(
+    "/{act_id}/full",
+    response_model=ActFullDetailResponse,
+    summary="Get full ACT detail — document info + related documents by type + all ACT parts",
+)
+def get_act_full_detail(
+    act_id: int,
+    pdf_service: PDFService = Depends(get_pdf_service),
+    parts_service: ActPartsService = Depends(get_act_parts_service),
+):
+    doc = pdf_service.get_by_id(act_id)
+    if not doc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="ACT document not found")
+
+    # Group related/child documents by their document type name
+    related_documents: dict[str, list[ActChildDocument]] = {}
+    for row in pdf_service.get_documents_under_act(act_id):
+        type_name = row.get("document_type_name") or "Other"
+        related_documents.setdefault(type_name, []).append(ActChildDocument(**row))
+
+    # Fetch all ACT parts (chapters, sections, schedules, annexures, appendices, forms)
+    act_parts = parts_service.get_all_parts(act_id)
+
+    return ActFullDetailResponse(
+        id=doc.id,
+        filename=doc.filename,
+        original_filename=doc.original_filename,
+        file_size=doc.file_size,
+        status=doc.status,
+        document_name=doc.document_name,
+        issue_date=doc.issue_date,
+        reference_number=doc.reference_number,
+        effective_from=doc.effective_from,
+        gazette_reference=doc.gazette_reference,
+        legal_authority=doc.legal_authority,
+        short_title=doc.short_title,
+        valid_until=doc.valid_until,
+        sector_domain=doc.sector_domain,
+        implementing_agency=doc.implementing_agency,
+        next_review_date=doc.next_review_date,
+        rule_making_authority=doc.rule_making_authority,
+        version_no=doc.version_no,
+        act_year=doc.act_year,
+        long_title=doc.long_title,
+        regional_title=doc.regional_title,
+        notification_no=doc.notification_no,
+        act_code=doc.act_code,
+        so_reason=doc.so_reason,
+        no_of_rules=doc.no_of_rules,
+        no_of_notifications=doc.no_of_notifications,
+        no_of_regulations=doc.no_of_regulations,
+        no_of_circulars=doc.no_of_circulars,
+        no_of_statutes=doc.no_of_statutes,
+        no_of_ordinances=doc.no_of_ordinances,
+        no_of_orders=doc.no_of_orders,
+        keywords=doc.keywords,
+        is_repealed=doc.is_repealed,
+        department_id=doc.department_id,
+        department_name=getattr(doc, "department_name", None),
+        document_type_id=doc.document_type_id,
+        document_type_name=getattr(doc, "document_type_name", None),
+        description=doc.description,
+        summary=doc.summary,
+        tags=getattr(doc, "tags", []),
+        relationships=getattr(doc, "relationships", []),
+        latest_approval=getattr(doc, "latest_approval", None),
+        uploaded_by=doc.uploaded_by,
+        uploader_username=getattr(doc, "uploader_username", None),
+        uploader_first_name=getattr(doc, "uploader_first_name", None),
+        uploader_last_name=getattr(doc, "uploader_last_name", None),
+        created_at=doc.created_at,
+        related_documents=related_documents,
+        act_parts=act_parts,
+    )

@@ -2,6 +2,7 @@ from datetime import datetime, date
 from typing import Optional
 from pydantic import BaseModel
 
+from app.schemas.act_parts import AllActPartsResponse
 from app.schemas.tag import TagRef
 
 
@@ -445,3 +446,70 @@ class ActChildDocument(BaseModel):
 class ActChildrenResponse(BaseModel):
     act_id: int
     children: dict[str, list[ActChildDocument]]
+
+
+# ── ACT Full Detail (single API — everything about an ACT) ───────────────────
+
+class ActFullDetailResponse(BaseModel):
+    # Core document fields
+    id: int
+    filename: str
+    original_filename: str
+    file_size: int
+    status: str
+
+    document_name: Optional[str] = None
+    issue_date: Optional[date] = None
+    reference_number: Optional[str] = None
+    effective_from: Optional[date] = None
+    gazette_reference: Optional[str] = None
+    legal_authority: Optional[str] = None
+    short_title: Optional[str] = None
+    valid_until: Optional[date] = None
+    sector_domain: Optional[str] = None
+    implementing_agency: Optional[str] = None
+    next_review_date: Optional[date] = None
+    rule_making_authority: Optional[str] = None
+    version_no: Optional[str] = None
+
+    # Act-specific fields
+    act_year: Optional[int] = None
+    long_title: Optional[str] = None
+    regional_title: Optional[str] = None
+    notification_no: Optional[str] = None
+    act_code: Optional[str] = None
+    so_reason: Optional[str] = None
+    no_of_rules: Optional[int] = None
+    no_of_notifications: Optional[int] = None
+    no_of_regulations: Optional[int] = None
+    no_of_circulars: Optional[int] = None
+    no_of_statutes: Optional[int] = None
+    no_of_ordinances: Optional[int] = None
+    no_of_orders: Optional[int] = None
+    keywords: Optional[str] = None
+    is_repealed: bool = False
+
+    department_id: Optional[int] = None
+    department_name: Optional[str] = None
+    document_type_id: Optional[int] = None
+    document_type_name: Optional[str] = None
+    description: Optional[str] = None
+    summary: Optional[str] = None
+
+    tags: list[TagRef] = []
+    relationships: list[RelationshipRef] = []
+    latest_approval: Optional[ApprovalInfo] = None
+
+    uploaded_by: int
+    uploader_username: Optional[str] = None
+    uploader_first_name: Optional[str] = None
+    uploader_last_name: Optional[str] = None
+    created_at: datetime
+
+    # Related documents linked to this ACT, grouped by document type name
+    related_documents: dict[str, list[ActChildDocument]] = {}
+
+    # ACT Parts: chapters, sections, schedules, annexures, appendices, forms
+    act_parts: AllActPartsResponse
+
+    model_config = {"from_attributes": True}
