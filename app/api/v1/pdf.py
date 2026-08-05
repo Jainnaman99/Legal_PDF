@@ -608,13 +608,15 @@ def get_act_children(
     pdf_id: int,
     service: PDFService = Depends(get_pdf_service),
 ):
-    rows = service.get_documents_under_act(pdf_id)
+    rows = service.get_act_full_related_docs(pdf_id)
     grouped: dict[str, list[ActChildDocument]] = {}
     for row in rows:
-        doc_type = row["document_type_name"]
-        grouped.setdefault(doc_type, []).append(ActChildDocument(**{
-            k: row[k] for k in ActChildDocument.model_fields if k in row
-        }))
+        doc_type = row.get("document_type_name") or "Other"
+        child = ActChildDocument(
+            **{k: v for k, v in row.items() if k != "tags"},
+            tags=PDFRepository._parse_tags(row.get("tags")),
+        )
+        grouped.setdefault(doc_type, []).append(child)
     return ActChildrenResponse(act_id=pdf_id, children=grouped)
 
 
