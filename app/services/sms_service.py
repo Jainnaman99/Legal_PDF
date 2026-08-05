@@ -16,7 +16,7 @@ class SmsService:
     def send_otp(self, to_number: str, otp: str) -> None:
         self._send(
             to_number,
-            f"Your Haryana Legal Knowledge System password reset OTP is: {otp}. Valid for 10 minutes.",
+            f"Your Haryana Government Digital Repository password reset OTP is: {otp}. Valid for 10 minutes.",
         )
 
     def _send(self, to_number: str, body: str) -> None:

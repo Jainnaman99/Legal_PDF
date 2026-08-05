@@ -15,12 +15,12 @@ class EmailService:
             logger.warning("[EmailService] SMTP not configured — OTP for %s: %s", to_email, otp)
             return
 
-        subject = "Haryana Legal Knowledge System — Password Reset OTP"
+        subject = "Haryana Government Digital Repository — Password Reset OTP"
         body_html = f"""
         <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px">
           <h2 style="color:#1a56db;margin-bottom:8px">Password Reset Request</h2>
           <p>Hello <strong>{username}</strong>,</p>
-          <p>Your one-time password (OTP) to reset your HLKS account password is:</p>
+          <p>Your one-time password (OTP) to reset your HGDR account password is:</p>
           <div style="font-size:36px;font-weight:800;letter-spacing:10px;color:#1a56db;
                       background:#f0f4ff;border-radius:8px;padding:16px 24px;
                       text-align:center;margin:16px 0">{otp}</div>
@@ -31,7 +31,7 @@ class EmailService:
           </p>
           <hr style="border:none;border-top:1px solid #eee;margin:20px 0"/>
           <p style="color:#adb5bd;font-size:11px">
-            Government of Haryana · Legal Knowledge System · HARTRON
+            Haryana Government Digital Repository · HARTRON
           </p>
         </div>
         """
