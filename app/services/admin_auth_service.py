@@ -46,8 +46,8 @@ class AdminAuthService:
         otp = self._generate_otp()
         expires_at = datetime.now(timezone.utc) + timedelta(minutes=_OTP_TTL_MINUTES)
         self._otp_repo.create(user.id, self._hash_otp(otp), expires_at)
-        self._sms_svc.send_admin_login_otp(mobile_number, otp)
-        return otp
+        sms_response = self._sms_svc.send_admin_login_otp(mobile_number, otp)
+        return otp, sms_response
 
     def verify_otp(self, mobile_number: str, otp: str) -> Optional[str]:
         """

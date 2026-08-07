@@ -39,10 +39,12 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str = ""
     SMTP_FROM:     str = ""
 
-    # Twilio SMS — set in .env for production
-    TWILIO_ACCOUNT_SID:  str = ""
-    TWILIO_AUTH_TOKEN:   str = ""
-    TWILIO_PHONE_NUMBER: str = ""
+    # BSNL SMS — set in .env for production
+    BSNL_USERNAME:         str = ""
+    BSNL_KEY:              str = ""
+    BSNL_SENDER_ID:        str = "GOVHRY"
+    BSNL_ENTITY_ID:        str = ""
+    BSNL_OTP_TEMPLATE_ID:  str = ""
 
     @field_validator("SMTP_PORT", mode="before")
     @classmethod
