@@ -70,6 +70,14 @@ class ResetService:
             self._sms_svc.send_otp(user.mobile_number, otp)
             return {"channel": "sms", "otp": otp}
 
+    def send_first_login_otp(self, user: User) -> None:
+        """Generate and SMS an OTP for the first-login mobile verification flow.
+        Stores the OTP against the user's own ID — no mobile-number lookup needed."""
+        otp = self._generate_otp()
+        expires_at = datetime.now(timezone.utc) + timedelta(minutes=_OTP_TTL_MINUTES)
+        self._otp_repo.create(user.id, self._hash_otp(otp), "sms", expires_at)
+        self._sms_svc.send_otp(user.mobile_number, otp)
+
     def verify_and_reset(self, identifier: str, otp: str, new_password: str) -> Optional[str]:
         """
         Verify OTP and reset the password.

@@ -155,6 +155,20 @@ class UserRepository(IUserRepository):
         )
         return [self._map_row(row) for row in result.mappings().fetchall()]
 
+    def set_mobile_verified(self, user_id: int, verified: bool) -> None:
+        self._db.execute(
+            text("CALL sp_set_mobile_verified(:user_id, :verified)"),
+            {"user_id": user_id, "verified": int(verified)},
+        )
+        self._db.commit()
+
+    def get_mobile_verified(self, user_id: int) -> bool:
+        row = self._db.execute(
+            text("SELECT mobile_verified FROM users WHERE id = :id"),
+            {"id": user_id},
+        ).mappings().fetchone()
+        return bool(row["mobile_verified"]) if row else False
+
     def count_by_dept_and_role(self, dept_id: int, role_id: int, exclude_user_id: Optional[int] = None) -> int:
         sql = (
             "SELECT COUNT(*) AS cnt FROM users "
@@ -208,6 +222,8 @@ class UserRepository(IUserRepository):
             role_id=row_dict.get("role_id"),
             department_id=row_dict.get("department_id"),
             approver_id=row_dict.get("approver_id"),
+            mobile_verified=bool(row_dict.get("mobile_verified", 0)),
+            email_verified=bool(row_dict.get("email_verified", 0)),
             created_at=row_dict["created_at"],
             updated_at=row_dict["updated_at"],
         )
@@ -243,6 +259,8 @@ class UserRepository(IUserRepository):
             last_name=row_dict.get("last_name"),
             role_id=row_dict.get("role_id"),
             department_id=row_dict.get("department_id"),
+            mobile_verified=bool(row_dict.get("mobile_verified", 0)),
+            email_verified=bool(row_dict.get("email_verified", 0)),
             created_at=row_dict["created_at"],
             updated_at=row_dict["updated_at"],
         )

@@ -102,3 +102,16 @@ class AdminOtpRequest(BaseModel):
 class AdminOtpVerifyRequest(BaseModel):
     mobile_number: str
     otp: str
+
+
+class FirstLoginOtpSentResponse(BaseModel):
+    masked_mobile: str
+    message: str
+
+
+class FirstLoginVerifyOtpRequest(BaseModel):
+    otp: str
+
+
+class FirstLoginResetRequest(BaseModel):
+    new_password: str

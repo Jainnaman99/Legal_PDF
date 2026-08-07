@@ -1,15 +1,20 @@
+import hashlib
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 logger = logging.getLogger(__name__)
 
-from app.core.dependencies import get_audit_service, get_auth_service, get_current_user, get_reset_service
+from app.core.dependencies import get_audit_service, get_auth_service, get_current_user, get_reset_service, get_user_repository
 from app.core.rsa_keys import decrypt_login_payload
-from app.core.security import decode_access_token
+from app.core.security import build_user_token, decode_access_token, hash_password
+from app.interfaces.user_repository import IUserRepository
 from app.models.user import User
 from app.schemas.auth import (
     ChangePasswordRequest,
+    FirstLoginOtpSentResponse,
+    FirstLoginResetRequest,
+    FirstLoginVerifyOtpRequest,
     ForgotPasswordRequest,
     LoginRequest,
     ResetPasswordRequest,
@@ -173,6 +178,105 @@ def reset_password(
 @router.get("/me", response_model=UserOut)
 def get_me(current_user: User = Depends(get_current_user)):
     return current_user
+
+
+# ── First-login mobile OTP flow ───────────────────────────────────────────────
+
+@router.post("/first-login/send-mobile-otp", response_model=FirstLoginOtpSentResponse)
+def first_login_send_mobile_otp(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    reset_svc: ResetService = Depends(get_reset_service),
+    audit: AuditService = Depends(get_audit_service),
+):
+    ip = get_client_ip(request)
+    if not current_user.mobile_number:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No mobile number registered for this account. Please contact the administrator.",
+        )
+    try:
+        reset_svc.send_first_login_otp(current_user)
+    except Exception as exc:
+        logger.exception("[first-login/send-mobile-otp] %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Could not send OTP. Please try again later.",
+        )
+    audit.log("first_login_otp_sent", "auth", actor_user_id=current_user.id, entity_id=current_user.id, ip_address=ip)
+    masked = _mask_mobile(current_user.mobile_number)
+    return FirstLoginOtpSentResponse(
+        masked_mobile=masked,
+        message=f"OTP sent to {masked}",
+    )
+
+
+@router.post("/first-login/verify-mobile-otp", response_model=TokenResponse)
+def first_login_verify_mobile_otp(
+    body: FirstLoginVerifyOtpRequest,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    reset_svc: ResetService = Depends(get_reset_service),
+    user_repo: IUserRepository = Depends(get_user_repository),
+    audit: AuditService = Depends(get_audit_service),
+):
+    ip = get_client_ip(request)
+    if not current_user.mobile_number:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No mobile number on record.")
+
+    otp_hash = hashlib.sha256(body.otp.encode()).hexdigest()
+    record = reset_svc._otp_repo.get_valid(current_user.id)
+    if not record or record["otp_hash"] != otp_hash:
+        audit.log("first_login_otp_verify_failed", "auth", actor_user_id=current_user.id, entity_id=current_user.id, ip_address=ip, status="failure")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired OTP.")
+
+    reset_svc._otp_repo.mark_used(record["id"])
+    user_repo.set_mobile_verified(current_user.id, True)
+
+    # Fetch fresh user and build token with mobile_verified=True
+    user = user_repo.get_by_id(current_user.id)
+    user.mobile_verified = True
+    token = build_user_token(user)
+
+    audit.log("first_login_mobile_verified", "auth", actor_user_id=current_user.id, entity_id=current_user.id, ip_address=ip)
+    return TokenResponse(access_token=token)
+
+
+@router.post("/first-login/reset-password", response_model=TokenResponse)
+def first_login_reset_password(
+    body: FirstLoginResetRequest,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    user_repo: IUserRepository = Depends(get_user_repository),
+    audit: AuditService = Depends(get_audit_service),
+):
+    ip = get_client_ip(request)
+
+    # Re-check mobile_verified directly from DB to prevent bypass
+    # (sp_get_user_by_id may not return mobile_verified, so we query it directly)
+    if not user_repo.get_mobile_verified(current_user.id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Mobile number must be verified before resetting your password.",
+        )
+    if len(body.new_password) < 8:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password must be at least 8 characters.")
+
+    user_repo.change_password(current_user.id, hash_password(body.new_password))
+
+    user = user_repo.get_by_id(current_user.id)
+    user.mobile_verified = True
+    token = build_user_token(user)
+
+    audit.log("first_login_password_reset", "user", actor_user_id=current_user.id, entity_id=current_user.id, ip_address=ip)
+    return TokenResponse(access_token=token)
+
+
+def _mask_mobile(mobile: str) -> str:
+    mobile = mobile.strip()
+    if len(mobile) <= 4:
+        return mobile
+    return mobile[:2] + "x" * (len(mobile) - 4) + mobile[-2:]
 
 
 def _mask_identifier(identifier: str) -> str:

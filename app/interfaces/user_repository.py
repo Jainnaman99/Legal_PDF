@@ -75,3 +75,11 @@ class IUserRepository(ABC):
     @abstractmethod
     def count_by_dept_and_role(self, dept_id: int, role_id: int, exclude_user_id: Optional[int] = None) -> int:
         ...
+
+    @abstractmethod
+    def set_mobile_verified(self, user_id: int, verified: bool) -> None:
+        ...
+
+    @abstractmethod
+    def get_mobile_verified(self, user_id: int) -> bool:
+        ...

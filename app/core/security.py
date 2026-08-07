@@ -63,4 +63,5 @@ def build_user_token(user) -> str:
         "role":                 user.role.name if user.role else None,
         "department_id":        user.department_id,
         "departments":          [{"id": d.id, "name": d.name} for d in all_depts],
+        "mobile_verified":      getattr(user, "mobile_verified", False),
     })
