@@ -182,6 +182,14 @@ def get_me(current_user: User = Depends(get_current_user)):
 
 # ── First-login mobile OTP flow ───────────────────────────────────────────────
 
+@router.get("/first-login/status")
+def first_login_status(
+    current_user: User = Depends(get_current_user),
+    user_repo: IUserRepository = Depends(get_user_repository),
+):
+    return {"mobile_verified": user_repo.get_mobile_verified(current_user.id)}
+
+
 @router.post("/first-login/send-mobile-otp", response_model=FirstLoginOtpSentResponse)
 def first_login_send_mobile_otp(
     request: Request,
