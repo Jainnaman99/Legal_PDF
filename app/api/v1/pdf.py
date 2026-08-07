@@ -332,6 +332,7 @@ def update_document(
     ):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorised to edit this document")
 
+    was_rejected = doc.status == "rejected"
     updated = service.update_document(
         document_id=document_id,
         tag_ids=body.tag_ids,
@@ -368,6 +369,10 @@ def update_document(
         keywords=body.keywords,
         is_repealed=body.is_repealed,
     )
+    if body.resubmit and was_rejected:
+        service.resubmit_document(document_id)
+        if updated:
+            updated.status = "pending"
     return updated
 
 

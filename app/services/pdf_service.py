@@ -340,6 +340,9 @@ class PDFService:
 
         return updated
 
+    def resubmit_document(self, document_id: int) -> None:
+        self._pdf_repo.resubmit_document(document_id)
+
     def update_document(self, document_id: int, tag_ids: Optional[list] = None, relationships: Optional[list] = None, **fields) -> Optional[PDFDocument]:
         doc = self._pdf_repo.update(document_id, **fields)
         if doc is None:

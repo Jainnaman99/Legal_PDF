@@ -138,6 +138,7 @@ class PDFUpdateRequest(BaseModel):
     is_repealed: Optional[bool] = None
     tag_ids: Optional[list[int]] = None
     relationships: Optional[list[RelationshipInput]] = None
+    resubmit: bool = False
 
 
 # ── Responses ────────────────────────────────────────────────

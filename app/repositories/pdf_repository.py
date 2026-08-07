@@ -199,6 +199,13 @@ class PDFRepository(IPDFRepository):
         self._db.commit()
         return self._map_row(row) if row else None
 
+    def resubmit_document(self, document_id: int) -> None:
+        self._db.execute(
+            text("UPDATE pdf_documents SET status='pending' WHERE id=:id AND status='rejected'"),
+            {"id": document_id},
+        )
+        self._db.commit()
+
     def get_by_id(self, document_id: int) -> Optional[PDFDocument]:
         result = self._db.execute(
             text("CALL sp_get_pdf_by_id(:document_id)"),
