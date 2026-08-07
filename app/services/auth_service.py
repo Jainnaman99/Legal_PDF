@@ -1,18 +1,25 @@
 from typing import Optional
 
 from app.core.security import build_user_token, decode_access_token, hash_password, verify_password
+from app.interfaces.dept_role_limit_repository import IDeptRoleLimitRepository
 from app.interfaces.login_log_repository import ILoginLogRepository
 from app.interfaces.user_repository import IUserRepository
 from app.models.user import User
 
-_MAX_USERS_PER_DEPT_ROLE = 2
+_DEFAULT_MAX_USERS = 5
 
 
 class AuthService:
 
-    def __init__(self, user_repo: IUserRepository, log_repo: ILoginLogRepository):
+    def __init__(
+        self,
+        user_repo: IUserRepository,
+        log_repo: ILoginLogRepository,
+        limit_repo: Optional[IDeptRoleLimitRepository] = None,
+    ):
         self._user_repo = user_repo
         self._log_repo = log_repo
+        self._limit_repo = limit_repo
 
     def register(
         self,
@@ -29,10 +36,13 @@ class AuthService:
         if role_id and department_id:
             dept_ids = [d.strip() for d in department_id.split(",") if d.strip().isdigit()]
             for dept_id in dept_ids:
+                custom = (self._limit_repo.get_limit(int(dept_id), role_id) if self._limit_repo else None)
+                if custom is None:
+                    custom = _DEFAULT_MAX_USERS
                 count = self._user_repo.count_by_dept_and_role(int(dept_id), role_id)
-                if count >= _MAX_USERS_PER_DEPT_ROLE:
+                if count >= custom:
                     raise ValueError(
-                        f"Department already has the maximum of {_MAX_USERS_PER_DEPT_ROLE} "
+                        f"Department already has the maximum of {custom} "
                         f"active users for this role."
                     )
         return self._user_repo.create(

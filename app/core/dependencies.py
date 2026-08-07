@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.interfaces.act_parts_repository import IActPartsRepository
+from app.interfaces.dept_role_limit_repository import IDeptRoleLimitRepository
 from app.interfaces.act_structure_repository import IActStructureRepository
 from app.interfaces.admin_otp_repository import IAdminOtpRepository
 from app.interfaces.audit_log_repository import IAuditLogRepository
@@ -20,6 +21,7 @@ from app.interfaces.tag_repository import ITagRepository
 from app.interfaces.user_repository import IUserRepository
 from app.models.user import User
 from app.repositories.act_parts_repository import ActPartsRepository
+from app.repositories.dept_role_limit_repository import DeptRoleLimitRepository
 from app.repositories.act_structure_repository import ActStructureRepository
 from app.repositories.admin_otp_repository import AdminOtpRepository
 from app.repositories.audit_log_repository import AuditLogRepository
@@ -92,11 +94,16 @@ def get_login_log_repository(db: Session = Depends(get_db)) -> ILoginLogReposito
     return LoginLogRepository(db)
 
 
+def get_dept_role_limit_repository(db: Session = Depends(get_db)) -> IDeptRoleLimitRepository:
+    return DeptRoleLimitRepository(db)
+
+
 def get_auth_service(
     repo: IUserRepository = Depends(get_user_repository),
     log_repo: ILoginLogRepository = Depends(get_login_log_repository),
+    limit_repo: IDeptRoleLimitRepository = Depends(get_dept_role_limit_repository),
 ) -> AuthService:
-    return AuthService(repo, log_repo)
+    return AuthService(repo, log_repo, limit_repo)
 
 
 def get_document_type_repository(db: Session = Depends(get_db)) -> IDocumentTypeRepository:
