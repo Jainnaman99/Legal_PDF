@@ -216,10 +216,10 @@ class PDFRepository(IPDFRepository):
         total = rows[0]["total_count"] if rows else 0
         return total, [self._map_row(row) for row in rows]
 
-    def list_all(self, skip: int = 0, limit: int = 100, status: Optional[str] = None) -> tuple[int, list[PDFDocument]]:
+    def list_all(self, skip: int = 0, limit: int = 100, status: Optional[str] = None, approver_id: Optional[int] = None) -> tuple[int, list[PDFDocument]]:
         result = self._db.execute(
-            text("CALL sp_list_all_pdfs(:skip, :limit, :status)"),
-            {"skip": skip, "limit": limit, "status": status},
+            text("CALL sp_list_all_pdfs(:skip, :limit, :status, :approver_id)"),
+            {"skip": skip, "limit": limit, "status": status, "approver_id": approver_id},
         )
         rows = result.mappings().fetchall()
         total = rows[0]["total_count"] if rows else 0
