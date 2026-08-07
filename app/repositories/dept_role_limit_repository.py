@@ -55,3 +55,16 @@ class DeptRoleLimitRepository(IDeptRoleLimitRepository):
         )
         self._db.commit()
         return result.rowcount > 0
+
+    def count_active_users(self, dept_id: int, role_id: int) -> int:
+        row = self._db.execute(
+            text("""
+                SELECT COUNT(*) AS cnt
+                FROM users
+                WHERE is_active = 1
+                  AND role_id = :r
+                  AND FIND_IN_SET(:d, REPLACE(department_id, ' ', '')) > 0
+            """),
+            {"d": str(dept_id), "r": role_id},
+        ).mappings().fetchone()
+        return int(row["cnt"]) if row else 0

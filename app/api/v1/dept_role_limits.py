@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 
 from app.core.dependencies import get_current_user, get_dept_role_limit_repository, require_roles
@@ -32,6 +32,16 @@ def upsert_limit(
 ):
     repo.upsert(body.department_id, body.role_id, body.max_users)
     return {"detail": "Limit saved."}
+
+
+@router.get("/user-count")
+def active_user_count(
+    dept_id: int = Query(...),
+    role_id: int = Query(...),
+    repo: IDeptRoleLimitRepository = Depends(get_dept_role_limit_repository),
+    _: User = Depends(require_roles("admin", "super Admin")),
+):
+    return {"active_count": repo.count_active_users(dept_id, role_id)}
 
 
 @router.delete("/{dept_id}/{role_id}", status_code=status.HTTP_204_NO_CONTENT)

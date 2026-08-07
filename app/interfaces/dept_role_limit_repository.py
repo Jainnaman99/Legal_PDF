@@ -23,3 +23,8 @@ class IDeptRoleLimitRepository(ABC):
     def delete(self, dept_id: int, role_id: int) -> bool:
         """Remove a custom cap. Returns True if a row was deleted."""
         ...
+
+    @abstractmethod
+    def count_active_users(self, dept_id: int, role_id: int) -> int:
+        """Return the number of currently active users for this (dept, role) pair."""
+        ...
