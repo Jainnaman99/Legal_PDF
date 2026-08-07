@@ -37,6 +37,7 @@ def register(
             body.username, body.email, body.password,
             body.first_name, body.last_name,
             body.role_id, body.department_id, body.mobile_number,
+            approver_id=body.approver_id,
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))

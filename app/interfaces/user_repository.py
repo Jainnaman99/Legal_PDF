@@ -33,7 +33,12 @@ class IUserRepository(ABC):
         role_id: Optional[int] = None,
         department_id: Optional[str] = None,
         mobile_number: Optional[str] = None,
+        approver_id: Optional[int] = None,
     ) -> User:
+        ...
+
+    @abstractmethod
+    def list_by_role_and_department(self, role_name: str, department_id: int) -> list[User]:
         ...
 
     @abstractmethod

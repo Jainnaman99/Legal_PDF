@@ -225,10 +225,10 @@ class PDFRepository(IPDFRepository):
         total = rows[0]["total_count"] if rows else 0
         return total, [self._map_row(row) for row in rows]
 
-    def get_pending(self, skip: int = 0, limit: int = 100) -> tuple[int, list[PDFDocument]]:
+    def get_pending(self, skip: int = 0, limit: int = 100, approver_id=None) -> tuple[int, list[PDFDocument]]:
         result = self._db.execute(
-            text("CALL sp_get_pending_pdfs(:skip, :limit)"),
-            {"skip": skip, "limit": limit},
+            text("CALL sp_get_pending_pdfs(:skip, :limit, :approver_id)"),
+            {"skip": skip, "limit": limit, "approver_id": approver_id},
         )
         rows = result.mappings().fetchall()
         total = rows[0]["total_count"] if rows else 0

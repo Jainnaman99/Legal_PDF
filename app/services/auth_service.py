@@ -24,6 +24,7 @@ class AuthService:
         role_id: Optional[int] = None,
         department_id: Optional[str] = None,
         mobile_number: Optional[str] = None,
+        approver_id: Optional[int] = None,
     ) -> User:
         if role_id and department_id:
             dept_ids = [d.strip() for d in department_id.split(",") if d.strip().isdigit()]
@@ -37,6 +38,7 @@ class AuthService:
         return self._user_repo.create(
             username, email, hash_password(password),
             first_name, last_name, role_id, department_id, mobile_number,
+            approver_id=approver_id,
         )
 
     def login(self, username: str, password: str, ip_address: Optional[str] = None) -> Optional[str]:

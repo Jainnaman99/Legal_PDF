@@ -50,6 +50,16 @@ def list_users(
     return repo.list_all(skip, limit, exclude_user_id=current_user.id, department_ids=dept_filter)
 
 
+@router.get("/approvers", response_model=list[UserOut])
+def get_approvers_by_department(
+    department_id: int = Query(..., description="Department ID to fetch approvers for"),
+    current_user: User = Depends(_manage_users),
+    repo: IUserRepository = Depends(get_user_repository),
+):
+    """Return active approvers belonging to the given department (used when creating an uploader)."""
+    return repo.list_by_role_and_department("approver", department_id)
+
+
 @router.get("/my-departments", response_model=list[DepartmentOut])
 def get_my_departments(
     current_user: User = Depends(_manage_users),

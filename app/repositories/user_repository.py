@@ -66,10 +66,11 @@ class UserRepository(IUserRepository):
         role_id: Optional[int] = None,
         department_id: Optional[str] = None,
         mobile_number: Optional[str] = None,
+        approver_id: Optional[int] = None,
     ) -> User:
         try:
             result = self._db.execute(
-                text("CALL sp_create_user(:username, :email, :hashed_password, :first_name, :last_name, :role_id, :department_id, :mobile_number)"),
+                text("CALL sp_create_user(:username, :email, :hashed_password, :first_name, :last_name, :role_id, :department_id, :mobile_number, :approver_id)"),
                 {
                     "username": username,
                     "email": email,
@@ -79,6 +80,7 @@ class UserRepository(IUserRepository):
                     "role_id": role_id,
                     "department_id": department_id,
                     "mobile_number": mobile_number,
+                    "approver_id": approver_id,
                 },
             )
             row = result.mappings().fetchone()
@@ -146,6 +148,13 @@ class UserRepository(IUserRepository):
         )
         self._db.commit()
 
+    def list_by_role_and_department(self, role_name: str, department_id: int) -> list[User]:
+        result = self._db.execute(
+            text("CALL sp_get_approvers_by_department(:department_id)"),
+            {"department_id": department_id},
+        )
+        return [self._map_row(row) for row in result.mappings().fetchall()]
+
     def count_by_dept_and_role(self, dept_id: int, role_id: int, exclude_user_id: Optional[int] = None) -> int:
         sql = (
             "SELECT COUNT(*) AS cnt FROM users "
@@ -198,6 +207,7 @@ class UserRepository(IUserRepository):
             last_name=row_dict.get("last_name"),
             role_id=row_dict.get("role_id"),
             department_id=row_dict.get("department_id"),
+            approver_id=row_dict.get("approver_id"),
             created_at=row_dict["created_at"],
             updated_at=row_dict["updated_at"],
         )

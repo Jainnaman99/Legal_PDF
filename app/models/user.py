@@ -20,6 +20,7 @@ class User(Base):
     last_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
     role_id: Mapped[int | None] = mapped_column(String(20), nullable=True)
     department_id: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    approver_id: Mapped[int | None] = mapped_column(nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )

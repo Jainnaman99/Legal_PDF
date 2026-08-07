@@ -72,6 +72,7 @@ class UserCreate(BaseModel):
     role_id: Optional[int] = None
     department_id: Optional[str] = None
     mobile_number: Optional[str] = None
+    approver_id: Optional[int] = None
 
 
 class UserUpdate(BaseModel):

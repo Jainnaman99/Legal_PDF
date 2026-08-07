@@ -58,7 +58,7 @@ class Settings(BaseSettings):
             return 3306
         return v
 
-    model_config = {"env_file": ".env"}
+    model_config = {"env_file": ".env", "extra": "ignore"}
 
 
 settings = Settings()

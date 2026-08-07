@@ -86,7 +86,7 @@ class IPDFRepository(ABC):
         ...
 
     @abstractmethod
-    def get_pending(self, skip: int = 0, limit: int = 100) -> tuple[int, list[PDFDocument]]:
+    def get_pending(self, skip: int = 0, limit: int = 100, approver_id: Optional[int] = None) -> tuple[int, list[PDFDocument]]:
         ...
 
     @abstractmethod

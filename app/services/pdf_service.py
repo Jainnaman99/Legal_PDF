@@ -229,8 +229,8 @@ class PDFService:
     def get_by_id(self, document_id: int) -> Optional[PDFDocument]:
         return self._pdf_repo.get_by_id(document_id)
 
-    def get_pending(self, skip: int = 0, limit: int = 100) -> tuple[int, list[PDFDocument]]:
-        return self._pdf_repo.get_pending(skip, limit)
+    def get_pending(self, skip: int = 0, limit: int = 100, approver_id: Optional[int] = None) -> tuple[int, list[PDFDocument]]:
+        return self._pdf_repo.get_pending(skip, limit, approver_id=approver_id)
 
     def list_my_documents(self, user_id: int, skip: int = 0, limit: int = 100) -> tuple[int, list[PDFDocument]]:
         return self._pdf_repo.list_by_user(user_id, skip, limit)

@@ -152,7 +152,11 @@ def list_pending_documents(
     current_user: User = Depends(_approver_roles),
     service: PDFService = Depends(get_pdf_service),
 ):
-    total, documents = service.get_pending(skip, limit)
+    # Pure approvers only see documents from their mapped uploaders.
+    # Admins / nodal officers / super-admins see everything.
+    role_name = current_user.role.name if current_user.role else ""
+    approver_filter = current_user.id if role_name == "approver" else None
+    total, documents = service.get_pending(skip, limit, approver_id=approver_filter)
     return PDFListResponse(total=total, documents=documents)
 
 
