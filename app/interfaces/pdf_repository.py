@@ -140,3 +140,16 @@ class IPDFRepository(ABC):
     @abstractmethod
     def citizen_search(self, document_type_id: Optional[int], name_prefix: Optional[str], skip: int, limit: int) -> tuple[int, list[PDFDocument]]:
         ...
+
+    @abstractmethod
+    def replace_file(
+        self,
+        pdf_id: int,
+        new_filename: str,
+        new_original_filename: str,
+        new_file_path: str,
+        new_file_size: int,
+        new_summary: Optional[str] = None,
+        resubmit: bool = False,
+    ) -> Optional[PDFDocument]:
+        ...

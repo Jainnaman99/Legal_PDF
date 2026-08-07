@@ -26,6 +26,7 @@ from app.schemas.pdf import (
     PDFReviewRequest,
     PDFUpdateRequest,
     PDFUploadResponse,
+    ReplaceFileRequest,
     SearchResponse,
     SearchResultItem,
 )
@@ -622,6 +623,45 @@ def get_act_children(
         )
         grouped.setdefault(doc_type, []).append(child)
     return ActChildrenResponse(act_id=pdf_id, children=grouped)
+
+
+@router.post(
+    "/{document_id}/replace-file",
+    response_model=PDFUploadResponse,
+    summary="Replace the file of a pending or rejected document; set resubmit=true to re-enter approval queue",
+)
+def replace_document_file(
+    document_id: int,
+    body: ReplaceFileRequest,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    service: PDFService = Depends(get_pdf_service),
+    audit: AuditService = Depends(get_audit_service),
+):
+    try:
+        doc = service.replace_file(
+            document_id=document_id,
+            user_id=current_user.id,
+            file_ref=body.file_ref,
+            resubmit=body.resubmit,
+        )
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except PermissionError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    if not doc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+    action = "pdf_resubmitted" if body.resubmit else "pdf_file_replaced"
+    audit.log(
+        action, "pdf",
+        actor_user_id=current_user.id,
+        entity_id=document_id,
+        details={"file_ref": body.file_ref, "resubmit": body.resubmit},
+        ip_address=get_client_ip(request),
+    )
+    return doc
 
 
 @router.get("/{document_id}", response_model=PDFUploadResponse, summary="Get document details by ID — approved documents only")

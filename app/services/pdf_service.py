@@ -273,6 +273,73 @@ class PDFService:
     def citizen_search(self, document_type_id: Optional[int], name_prefix: Optional[str], skip: int, limit: int) -> tuple[int, list]:
         return self._pdf_repo.citizen_search(document_type_id, name_prefix, skip, limit)
 
+    def replace_file(
+        self,
+        document_id: int,
+        user_id: int,
+        file_ref: str,
+        resubmit: bool = False,
+    ) -> Optional[PDFDocument]:
+        doc = self._pdf_repo.get_by_id(document_id)
+        if not doc:
+            raise FileNotFoundError(f"Document {document_id} not found.")
+        if doc.uploaded_by != user_id:
+            raise PermissionError("Not authorised to modify this document.")
+        if doc.status not in ("pending", "rejected"):
+            raise ValueError("File replacement is only allowed for pending or rejected documents.")
+        if resubmit and doc.status != "rejected":
+            raise ValueError("Resubmit is only allowed for rejected documents.")
+
+        file_path = os.path.join(settings.UPLOAD_DIR, file_ref)
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"File reference '{file_ref}' not found. Upload the file first.")
+
+        file_size = os.path.getsize(file_path)
+        original_filename = "_".join(file_ref.split("_")[1:]) if "_" in file_ref else file_ref
+
+        pages: list[tuple[int, str]] = []
+        try:
+            pages = [(num, txt) for num, txt in extract_pages(file_path) if txt.strip()]
+        except Exception:
+            pass
+
+        summary: str | None = None
+        if pages:
+            combined_text = "\n".join(txt for _, txt in pages)
+            try:
+                summary = summarize_document(combined_text)
+            except Exception:
+                pass
+
+        updated = self._pdf_repo.replace_file(
+            pdf_id=document_id,
+            new_filename=file_ref,
+            new_original_filename=original_filename,
+            new_file_path=file_path,
+            new_file_size=file_size,
+            new_summary=summary,
+            resubmit=resubmit,
+        )
+
+        if pages and updated is not None:
+            try:
+                self._page_repo.save_pages(updated.id, pages)
+            except Exception:
+                pass
+            if self._vector_store is not None:
+                try:
+                    self._vector_store.index_pages(
+                        pdf_id=updated.id,
+                        document_name=updated.document_name or original_filename,
+                        document_type_name=getattr(updated, "document_type_name", "") or "",
+                        department_name=getattr(updated, "department_name", "") or "",
+                        pages=pages,
+                    )
+                except Exception:
+                    pass
+
+        return updated
+
     def update_document(self, document_id: int, tag_ids: Optional[list] = None, relationships: Optional[list] = None, **fields) -> Optional[PDFDocument]:
         doc = self._pdf_repo.update(document_id, **fields)
         if doc is None:

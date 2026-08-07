@@ -99,6 +99,11 @@ class PDFCreateRequest(BaseModel):
 
 # ── Update request ───────────────────────────────────────────
 
+class ReplaceFileRequest(BaseModel):
+    file_ref: str
+    resubmit: bool = False
+
+
 class PDFUpdateRequest(BaseModel):
     document_name: Optional[str] = None
     reference_number: Optional[str] = None

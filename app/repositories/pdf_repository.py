@@ -326,6 +326,37 @@ class PDFRepository(IPDFRepository):
         )
         return [dict(row) for row in result.mappings().fetchall()]
 
+    def replace_file(
+        self,
+        pdf_id: int,
+        new_filename: str,
+        new_original_filename: str,
+        new_file_path: str,
+        new_file_size: int,
+        new_summary: Optional[str] = None,
+        resubmit: bool = False,
+    ) -> Optional[PDFDocument]:
+        result = self._db.execute(
+            text(
+                "CALL sp_replace_pdf_file("
+                ":pdf_id, :new_filename, :new_original_filename, :new_file_path, "
+                ":new_file_size, :new_summary, :resubmit"
+                ")"
+            ),
+            {
+                "pdf_id": pdf_id,
+                "new_filename": new_filename,
+                "new_original_filename": new_original_filename,
+                "new_file_path": new_file_path,
+                "new_file_size": new_file_size,
+                "new_summary": new_summary,
+                "resubmit": 1 if resubmit else 0,
+            },
+        )
+        row = result.mappings().fetchone()
+        self._db.commit()
+        return self._map_row(row) if row else None
+
     def save_relationships(self, pdf_id: int, relationships: list[dict]) -> None:
         if not relationships:
             return
