@@ -74,6 +74,7 @@ class IPDFRepository(ABC):
         no_of_orders: Optional[int] = None,
         keywords: Optional[str] = None,
         is_repealed: Optional[bool] = None,
+        last_updated_on: Optional[date] = None,
     ) -> Optional[PDFDocument]:
         ...
 

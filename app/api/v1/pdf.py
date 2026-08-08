@@ -129,6 +129,7 @@ def create_document(
             no_of_orders=body.no_of_orders,
             keywords=body.keywords,
             is_repealed=body.is_repealed,
+            last_updated_on=body.last_updated_on,
         )
     except FileNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -368,6 +369,7 @@ def update_document(
         no_of_orders=body.no_of_orders,
         keywords=body.keywords,
         is_repealed=body.is_repealed,
+        last_updated_on=body.last_updated_on,
     )
     if body.resubmit and was_rejected:
         service.resubmit_document(document_id)

@@ -95,6 +95,7 @@ class PDFCreateRequest(BaseModel):
     tag_ids: Optional[list[int]] = None
     relationships: Optional[list[RelationshipInput]] = None
     description: Optional[str] = None
+    last_updated_on: Optional[date] = None
 
 
 # ── Update request ───────────────────────────────────────────
@@ -138,6 +139,7 @@ class PDFUpdateRequest(BaseModel):
     is_repealed: Optional[bool] = None
     tag_ids: Optional[list[int]] = None
     relationships: Optional[list[RelationshipInput]] = None
+    last_updated_on: Optional[date] = None
     resubmit: bool = False
 
 
@@ -180,6 +182,7 @@ class PDFUploadResponse(BaseModel):
     no_of_orders: Optional[int] = None
     keywords: Optional[str] = None
     is_repealed: bool = False
+    last_updated_on: Optional[date] = None
 
     department_id: Optional[int] = None
     department_name: Optional[str] = None
@@ -233,6 +236,7 @@ class PDFListItem(BaseModel):
     no_of_orders: Optional[int] = None
     keywords: Optional[str] = None
     is_repealed: bool = False
+    last_updated_on: Optional[date] = None
 
     department_id: Optional[int] = None
     department_name: Optional[str] = None

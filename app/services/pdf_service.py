@@ -110,6 +110,7 @@ class PDFService:
         no_of_orders: Optional[int] = None,
         keywords: Optional[str] = None,
         is_repealed: bool = False,
+        last_updated_on: Optional[date] = None,
     ) -> PDFDocument:
         file_path = os.path.join(settings.UPLOAD_DIR, file_ref)
         if not os.path.exists(file_path):
@@ -167,6 +168,7 @@ class PDFService:
             no_of_orders=no_of_orders,
             keywords=keywords,
             is_repealed=is_repealed,
+            last_updated_on=last_updated_on,
         )
 
         # Save tags and relationships immediately after create (while session is clean).

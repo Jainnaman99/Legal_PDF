@@ -55,6 +55,7 @@ class PDFRepository(IPDFRepository):
         no_of_orders: Optional[int] = None,
         keywords: Optional[str] = None,
         is_repealed: bool = False,
+        last_updated_on: Optional[date] = None,
     ) -> PDFDocument:
         result = self._db.execute(
             text(
@@ -66,7 +67,8 @@ class PDFRepository(IPDFRepository):
                 ":version_no, :department_id, :document_type_id, :description, :summary, "
                 ":act_year, :long_title, :regional_title, :notification_no, :act_code, :so_reason, "
                 ":no_of_rules, :no_of_notifications, :no_of_regulations, :no_of_circulars, "
-                ":no_of_statutes, :no_of_ordinances, :no_of_orders, :keywords, :is_repealed"
+                ":no_of_statutes, :no_of_ordinances, :no_of_orders, :keywords, :is_repealed, "
+                ":last_updated_on"
                 ")"
             ),
             {
@@ -107,6 +109,7 @@ class PDFRepository(IPDFRepository):
                 "no_of_orders": no_of_orders,
                 "keywords": keywords,
                 "is_repealed": is_repealed,
+                "last_updated_on": last_updated_on,
             },
         )
         row = result.mappings().fetchone()
@@ -147,6 +150,7 @@ class PDFRepository(IPDFRepository):
         no_of_orders: Optional[int] = None,
         keywords: Optional[str] = None,
         is_repealed: Optional[bool] = None,
+        last_updated_on: Optional[date] = None,
     ) -> Optional[PDFDocument]:
         result = self._db.execute(
             text(
@@ -157,7 +161,8 @@ class PDFRepository(IPDFRepository):
                 ":version_no, :department_id, :document_type_id, :description, "
                 ":act_year, :long_title, :regional_title, :notification_no, :act_code, :so_reason, "
                 ":no_of_rules, :no_of_notifications, :no_of_regulations, :no_of_circulars, "
-                ":no_of_statutes, :no_of_ordinances, :no_of_orders, :keywords, :is_repealed"
+                ":no_of_statutes, :no_of_ordinances, :no_of_orders, :keywords, :is_repealed, "
+                ":last_updated_on"
                 ")"
             ),
             {
@@ -193,6 +198,7 @@ class PDFRepository(IPDFRepository):
                 "no_of_orders": no_of_orders,
                 "keywords": keywords,
                 "is_repealed": is_repealed,
+                "last_updated_on": last_updated_on,
             },
         )
         row = result.mappings().fetchone()
@@ -465,6 +471,7 @@ class PDFRepository(IPDFRepository):
             no_of_orders=d.get("no_of_orders"),
             keywords=d.get("keywords"),
             is_repealed=bool(d.get("is_repealed", False)),
+            last_updated_on=d.get("last_updated_on"),
             uploaded_by=d["uploaded_by"],
             created_at=d["created_at"],
         )

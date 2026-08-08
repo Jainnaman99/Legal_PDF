@@ -46,6 +46,7 @@ class PDFDocument(Base):
     no_of_orders: Mapped[int | None] = mapped_column(Integer, nullable=True)
     keywords: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_repealed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    last_updated_on: Mapped[date | None] = mapped_column(Date, nullable=True)
 
     # Circular-specific
     valid_until: Mapped[date | None] = mapped_column(Date, nullable=True)
