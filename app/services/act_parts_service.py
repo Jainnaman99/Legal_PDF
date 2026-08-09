@@ -332,11 +332,11 @@ class ActPartsService:
     def get_approvals(self, pdf_document_id: int) -> list[ActPartApprovalOut]:
         return [ActPartApprovalOut(**r) for r in self._repo.get_approvals(pdf_document_id)]
 
-    def list_pending(self) -> list[ActPartPendingItem]:
-        return [ActPartPendingItem(**r) for r in self._repo.list_pending()]
+    def list_pending(self, approver_id: Optional[int] = None, department_id: Optional[int] = None) -> list[ActPartPendingItem]:
+        return [ActPartPendingItem(**r) for r in self._repo.list_pending(approver_id=approver_id, department_id=department_id)]
 
     def list_my_submissions(self, user_id: int) -> list[ActPartPendingItem]:
         return [ActPartPendingItem(**r) for r in self._repo.list_my_submissions(user_id)]
 
-    def list_all_submissions(self) -> list[ActPartPendingItem]:
-        return [ActPartPendingItem(**r) for r in self._repo.list_all_submissions()]
+    def list_all_submissions(self, approver_id: Optional[int] = None, department_id: Optional[int] = None) -> list[ActPartPendingItem]:
+        return [ActPartPendingItem(**r) for r in self._repo.list_all_submissions(approver_id=approver_id, department_id=department_id)]

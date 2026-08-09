@@ -199,7 +199,15 @@ def list_pending_act_parts(
     current_user: User = Depends(_approver_roles),
     service: ActPartsService = Depends(get_act_parts_service),
 ):
-    return service.list_pending()
+    role_name = current_user.role.name if current_user.role else ""
+    approver_filter = current_user.id if role_name == "approver" else None
+    dept_filter = None
+    if role_name == "nodal Officer" and current_user.department_id:
+        try:
+            dept_filter = int(current_user.department_id)
+        except (TypeError, ValueError):
+            pass
+    return service.list_pending(approver_id=approver_filter, department_id=dept_filter)
 
 
 @router.get(
@@ -211,7 +219,15 @@ def list_all_act_part_submissions(
     current_user: User = Depends(_approver_roles),
     service: ActPartsService = Depends(get_act_parts_service),
 ):
-    return service.list_all_submissions()
+    role_name = current_user.role.name if current_user.role else ""
+    approver_filter = current_user.id if role_name == "approver" else None
+    dept_filter = None
+    if role_name == "nodal Officer" and current_user.department_id:
+        try:
+            dept_filter = int(current_user.department_id)
+        except (TypeError, ValueError):
+            pass
+    return service.list_all_submissions(approver_id=approver_filter, department_id=dept_filter)
 
 
 @router.get(

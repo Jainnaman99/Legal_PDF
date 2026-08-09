@@ -163,7 +163,7 @@ class ActPartsRepository(IActPartsRepository):
         ).mappings().fetchall()
         return [dict(r) for r in rows]
 
-    def list_pending(self) -> list[dict]:
+    def list_pending(self, approver_id: Optional[int] = None, department_id: Optional[int] = None) -> list[dict]:
         rows = self._db.execute(
             text(
                 "SELECT a.id, a.pdf_document_id, a.part_type, a.status, a.submitted_by, "
@@ -175,8 +175,12 @@ class ActPartsRepository(IActPartsRepository):
                 "JOIN users u ON u.id = a.submitted_by "
                 "JOIN pdf_documents d ON d.id = a.pdf_document_id "
                 "LEFT JOIN document_types dt ON dt.id = d.document_type_id "
-                "WHERE a.status = 'pending' ORDER BY a.submitted_at ASC"
-            )
+                "WHERE a.status = 'pending' "
+                "AND (:approver_id IS NULL OR u.approver_id = :approver_id) "
+                "AND (:department_id IS NULL OR u.department_id = :department_id) "
+                "ORDER BY a.submitted_at ASC"
+            ),
+            {"approver_id": approver_id, "department_id": department_id},
         ).mappings().fetchall()
         return [dict(r) for r in rows]
 
@@ -198,7 +202,7 @@ class ActPartsRepository(IActPartsRepository):
         ).mappings().fetchall()
         return [dict(r) for r in rows]
 
-    def list_all_submissions(self) -> list[dict]:
+    def list_all_submissions(self, approver_id: Optional[int] = None, department_id: Optional[int] = None) -> list[dict]:
         rows = self._db.execute(
             text(
                 "SELECT a.id, a.pdf_document_id, a.part_type, a.status, a.submitted_by, "
@@ -213,8 +217,11 @@ class ActPartsRepository(IActPartsRepository):
                 "JOIN pdf_documents d ON d.id = a.pdf_document_id "
                 "LEFT JOIN document_types dt ON dt.id = d.document_type_id "
                 "LEFT JOIN users r ON r.id = a.reviewed_by "
+                "WHERE (:approver_id IS NULL OR u.approver_id = :approver_id) "
+                "AND (:department_id IS NULL OR u.department_id = :department_id) "
                 "ORDER BY a.submitted_at DESC"
-            )
+            ),
+            {"approver_id": approver_id, "department_id": department_id},
         ).mappings().fetchall()
         return [dict(r) for r in rows]
 
