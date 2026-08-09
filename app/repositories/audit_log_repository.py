@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 from datetime import datetime
 from typing import Optional
@@ -68,6 +70,11 @@ class AuditLogRepository(IAuditLogRepository):
             return 0, []
         total = rows[0]["total"]
         return total, [self._map_row(r) for r in rows]
+
+    def get_distinct_actions(self) -> list[str]:
+        result = self._db.execute(text("CALL sp_get_audit_log_actions()"))
+        rows = result.fetchall()
+        return [r[0] for r in rows]
 
     @staticmethod
     def _map_row(row) -> dict:

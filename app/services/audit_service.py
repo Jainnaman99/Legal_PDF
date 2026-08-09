@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import logging
 from datetime import datetime
@@ -49,3 +51,6 @@ class AuditService:
         department_ids: Optional[str] = None,
     ) -> tuple[int, list[dict]]:
         return self._repo.list(skip, limit, user_id, action, entity_type, from_date, to_date, exclude_user_id, department_ids)
+
+    def get_distinct_actions(self) -> list[str]:
+        return self._repo.get_distinct_actions()

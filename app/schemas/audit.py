@@ -26,3 +26,7 @@ class AuditLogOut(BaseModel):
 class AuditLogListResponse(BaseModel):
     total: int
     logs: list[AuditLogOut]
+
+
+class AuditActionsResponse(BaseModel):
+    actions: list[str]

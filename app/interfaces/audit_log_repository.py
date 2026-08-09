@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Optional
@@ -31,4 +33,8 @@ class IAuditLogRepository(ABC):
         exclude_user_id: Optional[int] = None,
         department_ids: Optional[str] = None,
     ) -> tuple[int, list[dict]]:
+        ...
+
+    @abstractmethod
+    def get_distinct_actions(self) -> list[str]:
         ...

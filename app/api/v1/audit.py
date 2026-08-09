@@ -5,12 +5,21 @@ from fastapi import APIRouter, Depends, Query
 
 from app.core.dependencies import get_audit_service, require_roles
 from app.models.user import User
-from app.schemas.audit import AuditActorOut, AuditLogListResponse, AuditLogOut
+from app.schemas.audit import AuditActorOut, AuditActionsResponse, AuditLogListResponse, AuditLogOut
 from app.services.audit_service import AuditService
 
 router = APIRouter(prefix="/audit-logs", tags=["Audit Logs"])
 
 _audit_roles = require_roles("super Admin", "admin", "nodal Officer")
+
+
+@router.get("/actions", response_model=AuditActionsResponse)
+def list_audit_actions(
+    current_user: User = Depends(_audit_roles),
+    service: AuditService = Depends(get_audit_service),
+):
+    actions = service.get_distinct_actions()
+    return AuditActionsResponse(actions=actions)
 
 
 @router.get("/", response_model=AuditLogListResponse)
