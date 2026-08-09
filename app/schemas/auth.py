@@ -54,11 +54,11 @@ class ChangePasswordRequest(BaseModel):
 
 
 class ForgotPasswordRequest(BaseModel):
-    identifier: str  # email address or mobile number
+    username: str
 
 
 class ResetPasswordRequest(BaseModel):
-    identifier: str  # same value used in forgot-password request
+    username: str
     otp: str
     new_password: str
 

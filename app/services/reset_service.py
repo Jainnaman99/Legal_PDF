@@ -37,38 +37,28 @@ class ResetService:
     def _hash_otp(otp: str) -> str:
         return hashlib.sha256(otp.encode()).hexdigest()
 
-    def _find_user(self, identifier: str) -> Optional[User]:
-        if "@" in identifier:
-            return self._user_repo.get_by_email(identifier)
-        return self._user_repo.get_by_mobile(identifier.strip())
-
-
     # ── public API ────────────────────────────────────────────
 
-    def request_otp(self, identifier: str) -> dict:
+    def request_otp_by_username(self, username: str) -> dict:
         """
-        Generate a 6-digit OTP.
-        Returns {"channel": "email"|"sms", "otp": "123456"}.
-        Raises ValueError if no active account is found for the identifier.
+        Look up user by username, send OTP via SMS.
+        Returns {"masked_mobile": "XXXXXX1234"}.
+        Raises ValueError if the user is not found, inactive, or has no mobile number.
         """
-        user = self._find_user(identifier)
+        user = self._user_repo.get_by_username(username.strip())
         if not user or not user.is_active:
-            label = "email address" if "@" in identifier else "mobile number"
-            raise ValueError(f"No active account found with this {label}.")
+            raise ValueError("No active account found with this username.")
+        if not user.mobile_number:
+            raise ValueError("No mobile number registered for this account. Please contact the administrator.")
 
         otp = self._generate_otp()
         expires_at = datetime.now(timezone.utc) + timedelta(minutes=_OTP_TTL_MINUTES)
+        self._otp_repo.create(user.id, self._hash_otp(otp), "sms", expires_at)
+        self._sms_svc.send_otp(user.mobile_number, otp)
 
-        if "@" in identifier:
-            self._otp_repo.create(user.id, self._hash_otp(otp), "email", expires_at)
-            self._email_svc.send_otp(user.email, user.username, otp)
-            return {"channel": "email", "otp": otp}
-        else:
-            if not user.mobile_number:
-                raise ValueError("No mobile number registered for this account. Please contact the administrator.")
-            self._otp_repo.create(user.id, self._hash_otp(otp), "sms", expires_at)
-            self._sms_svc.send_otp(user.mobile_number, otp)
-            return {"channel": "sms", "otp": otp}
+        mobile = user.mobile_number
+        masked = "X" * (len(mobile) - 4) + mobile[-4:]
+        return {"masked_mobile": masked}
 
     def send_first_login_otp(self, user: User) -> None:
         """Generate and SMS an OTP for the first-login mobile verification flow.
@@ -78,12 +68,12 @@ class ResetService:
         self._otp_repo.create(user.id, self._hash_otp(otp), "sms", expires_at)
         self._sms_svc.send_otp(user.mobile_number, otp)
 
-    def verify_and_reset(self, identifier: str, otp: str, new_password: str) -> Optional[str]:
+    def verify_and_reset(self, username: str, otp: str, new_password: str) -> Optional[str]:
         """
         Verify OTP and reset the password.
         Returns a fresh JWT on success, None on failure.
         """
-        user = self._find_user(identifier)
+        user = self._user_repo.get_by_username(username.strip())
         if not user or not user.is_active:
             return None
 

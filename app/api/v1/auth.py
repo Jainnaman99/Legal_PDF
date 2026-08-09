@@ -136,9 +136,9 @@ def forgot_password(
 ):
     ip = get_client_ip(request)
     try:
-        result = service.request_otp(body.identifier)
+        result = service.request_otp_by_username(body.username)
     except ValueError as exc:
-        audit.log("forgot_password_failed", "auth", details={"identifier": body.identifier, "error": str(exc)}, ip_address=ip, status="failure")
+        audit.log("forgot_password_failed", "auth", details={"username": body.username, "error": str(exc)}, ip_address=ip, status="failure")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
     except Exception as exc:
         logger.exception("[forgot-password] Unexpected error: %s", exc)
@@ -146,10 +146,8 @@ def forgot_password(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Could not send OTP. Please try again later.",
         )
-    channel = result["channel"]
-    audit.log("forgot_password", "auth", details={"identifier": body.identifier, "channel": channel}, ip_address=ip)
-    masked = _mask_identifier(body.identifier)
-    return {"message": f"OTP generated for your {channel} ({masked})", "channel": channel, "otp": result["otp"]}
+    audit.log("forgot_password", "auth", details={"username": body.username, "channel": "sms"}, ip_address=ip)
+    return {"masked_mobile": result["masked_mobile"]}
 
 
 @router.post("/reset-password", response_model=TokenResponse)
@@ -162,16 +160,16 @@ def reset_password(
     ip = get_client_ip(request)
     if len(body.new_password) < 8:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password must be at least 8 characters.")
-    token = service.verify_and_reset(body.identifier, body.otp, body.new_password)
+    token = service.verify_and_reset(body.username, body.otp, body.new_password)
     if not token:
-        audit.log("password_reset_failed", "auth", details={"identifier": body.identifier}, ip_address=ip, status="failure")
+        audit.log("password_reset_failed", "auth", details={"username": body.username}, ip_address=ip, status="failure")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid or expired OTP. Please request a new one.",
         )
     payload = decode_access_token(token)
     actor_id = int(payload["sub"]) if payload and "sub" in payload else None
-    audit.log("password_reset", "auth", actor_user_id=actor_id, entity_id=actor_id, details={"identifier": body.identifier}, ip_address=ip)
+    audit.log("password_reset", "auth", actor_user_id=actor_id, entity_id=actor_id, details={"username": body.username}, ip_address=ip)
     return TokenResponse(access_token=token)
 
 
