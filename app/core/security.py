@@ -55,6 +55,8 @@ def build_user_token(user) -> str:
     return create_access_token({
         "sub":                  str(user.id),
         "username":             user.username,
+        "first_name":           getattr(user, "first_name", None),
+        "last_name":            getattr(user, "last_name", None),
         "email":                user.email,
         "is_active":            user.is_active,
         "must_change_password": must_change,
