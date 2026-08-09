@@ -71,8 +71,11 @@ class AuditLogRepository(IAuditLogRepository):
         total = rows[0]["total"]
         return total, [self._map_row(r) for r in rows]
 
-    def get_distinct_actions(self) -> list[str]:
-        result = self._db.execute(text("CALL sp_get_audit_log_actions()"))
+    def get_distinct_actions(self, department_id: Optional[int] = None, exclude_user_id: Optional[int] = None) -> list[str]:
+        result = self._db.execute(
+            text("CALL sp_get_audit_log_actions(:dept_id, :exclude_user_id)"),
+            {"dept_id": department_id, "exclude_user_id": exclude_user_id},
+        )
         rows = result.fetchall()
         return [r[0] for r in rows]
 

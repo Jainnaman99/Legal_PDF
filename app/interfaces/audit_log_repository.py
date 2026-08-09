@@ -36,5 +36,5 @@ class IAuditLogRepository(ABC):
         ...
 
     @abstractmethod
-    def get_distinct_actions(self) -> list[str]:
+    def get_distinct_actions(self, department_id: Optional[int] = None, exclude_user_id: Optional[int] = None) -> list[str]:
         ...

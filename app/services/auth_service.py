@@ -78,4 +78,11 @@ class AuthService:
         user_id = payload.get("sub")
         if not user_id:
             return None
-        return self._user_repo.get_by_id(int(user_id))
+        user = self._user_repo.get_by_id(int(user_id))
+        # If the DB SP doesn't return department_id (e.g. MySQL SP gap), fall
+        # back to the JWT value which was written from correct data at login.
+        if user and not user.department_id:
+            raw = payload.get("department_id")
+            if raw is not None:
+                user.department_id = str(raw)
+        return user

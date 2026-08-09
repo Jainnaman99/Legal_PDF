@@ -18,7 +18,14 @@ def list_audit_actions(
     current_user: User = Depends(_audit_roles),
     service: AuditService = Depends(get_audit_service),
 ):
-    actions = service.get_distinct_actions()
+    dept_id = None
+    role_name = current_user.role.name if current_user.role else None
+    if role_name == "nodal Officer" and current_user.department_id:
+        try:
+            dept_id = int(current_user.department_id)
+        except (TypeError, ValueError):
+            pass
+    actions = service.get_distinct_actions(department_id=dept_id, exclude_user_id=current_user.id)
     return AuditActionsResponse(actions=actions)
 
 
