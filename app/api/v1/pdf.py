@@ -401,7 +401,7 @@ def citizen_search(
     document_type_id: Optional[int] = Query(None, description="Filter by document type ID"),
     name: Optional[str] = Query(None, description="Document name starts with"),
     skip: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100),
+    limit: int = Query(20, ge=1, le=500),
     service: PDFService = Depends(get_pdf_service),
 ):
     total, documents = service.citizen_search(document_type_id, name, skip, limit)
