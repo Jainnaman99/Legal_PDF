@@ -82,6 +82,16 @@ class AdminAuthService:
 
         return departments
 
+    def _all_departments_for_mobile(self, mobile_number: str) -> list:
+        """Collect every unique department linked to this mobile across all admin users."""
+        users = self._user_repo.get_all_admin_by_mobile(mobile_number)
+        seen: dict[int, object] = {}
+        for u in users:
+            for dept in (u.departments or []):
+                if dept.id not in seen:
+                    seen[dept.id] = dept
+        return list(seen.values())
+
     def switch_department(self, mobile_number: str, department_id: int) -> Optional[str]:
         """
         Already-authenticated admin switches to a different department linked to
@@ -94,6 +104,7 @@ class AdminAuthService:
         if not user.role or user.role.name not in _ADMIN_ROLES:
             return None
         fresh_user = self._user_repo.get_by_id(user.id)
+        fresh_user.departments = self._all_departments_for_mobile(mobile_number)
         return build_user_token(fresh_user)
 
     def complete_login(self, mobile_number: str, otp: str, department_id: int) -> Optional[str]:
@@ -115,4 +126,5 @@ class AdminAuthService:
 
         self._otp_repo.mark_used(record["id"])
         fresh_user = self._user_repo.get_by_id(user.id)
+        fresh_user.departments = self._all_departments_for_mobile(mobile_number)
         return build_user_token(fresh_user)
