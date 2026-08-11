@@ -102,6 +102,11 @@ class AdminOtpRequest(BaseModel):
 class AdminOtpVerifyRequest(BaseModel):
     mobile_number: str
     otp: str
+
+
+class AdminCompleteLoginRequest(BaseModel):
+    mobile_number: str
+    otp: str
     department_id: int
 
 

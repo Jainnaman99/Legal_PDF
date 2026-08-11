@@ -35,8 +35,7 @@ class AdminAuthService:
     def request_otp(self, mobile_number: str):
         """
         Find all active admin users with this mobile, send one OTP (stored for each
-        matching user), and return (otp, departments, sms_response).
-        departments is a list of {"id": int, "name": str} for the frontend picker.
+        matching user), and return (otp, sms_response).
         """
         users = self._user_repo.get_all_admin_by_mobile(mobile_number.strip())
         if not users:
@@ -46,13 +45,33 @@ class AdminAuthService:
         expires_at = datetime.now(timezone.utc) + timedelta(minutes=_OTP_TTL_MINUTES)
         otp_hash   = self._hash_otp(otp)
 
-        # Store the same OTP for every matching user so any of them can verify.
         for user in users:
             self._otp_repo.create(user.id, otp_hash, expires_at)
 
         sms_response = self._sms_svc.send_admin_login_otp(mobile_number, otp)
+        return otp, sms_response
 
-        # Build a deduplicated department list for the selection step.
+    def verify_otp(self, mobile_number: str, otp: str) -> Optional[list[dict]]:
+        """
+        Validate the OTP against any admin user with this mobile.
+        Returns the departments list if the OTP is correct (does NOT mark it as used yet —
+        the user still needs to select a department via complete_login).
+        Returns None if OTP is invalid or expired.
+        """
+        users = self._user_repo.get_all_admin_by_mobile(mobile_number.strip())
+        if not users:
+            return None
+
+        otp_hash = self._hash_otp(otp)
+        # Check OTP against any matching user — all share the same hash.
+        for user in users:
+            record = self._otp_repo.get_valid(user.id)
+            if record and record["otp_hash"] == otp_hash:
+                break
+        else:
+            return None  # No valid matching OTP found
+
+        # Build deduplicated department list.
         departments = []
         seen = set()
         for user in users:
@@ -61,12 +80,12 @@ class AdminAuthService:
                     seen.add(dept.id)
                     departments.append({"id": dept.id, "name": dept.name})
 
-        return otp, departments, sms_response
+        return departments
 
-    def verify_otp(self, mobile_number: str, otp: str, department_id: int) -> Optional[str]:
+    def complete_login(self, mobile_number: str, otp: str, department_id: int) -> Optional[str]:
         """
-        Verify the OTP for the user identified by (mobile_number, department_id).
-        Returns a JWT on success, None on failure.
+        Final login step: find the specific user by (mobile, department_id), re-verify
+        the OTP, mark it as used, and return a JWT access token.
         """
         user = self._user_repo.get_by_mobile_and_dept(mobile_number.strip(), department_id)
         if not user or not user.is_active:

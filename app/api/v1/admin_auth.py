@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from app.core.dependencies import get_admin_auth_service, get_audit_service
 from app.core.security import decode_access_token
-from app.schemas.auth import AdminOtpRequest, AdminOtpVerifyRequest, TokenResponse
+from app.schemas.auth import AdminOtpRequest, AdminOtpVerifyRequest, AdminCompleteLoginRequest, TokenResponse
 from app.services.admin_auth_service import AdminAuthService
 from app.services.audit_service import AuditService
 from app.utils.request_utils import get_client_ip
@@ -23,7 +23,7 @@ def request_admin_otp(
 ):
     ip = get_client_ip(request)
     try:
-        otp, departments, sms_response = service.request_otp(body.mobile_number)
+        otp, sms_response = service.request_otp(body.mobile_number)
     except ValueError as exc:
         audit.log(
             "admin_otp_request_failed", "auth",
@@ -41,22 +41,54 @@ def request_admin_otp(
     audit.log("admin_otp_requested", "auth", details={"mobile": body.mobile_number}, ip_address=ip)
     return {
         "message": "OTP generated. Valid for 10 minutes.",
-        "departments": departments,
         "sms_response": sms_response,
-        # TODO: remove 'otp' once real SMS delivery is confirmed in production
+        # TODO: remove once real SMS delivery is confirmed in production
         "otp": otp,
     }
 
 
-@router.post("/verify-otp", response_model=TokenResponse)
+@router.post("/verify-otp", status_code=status.HTTP_200_OK)
 def verify_admin_otp(
     body: AdminOtpVerifyRequest,
     request: Request,
     service: AdminAuthService = Depends(get_admin_auth_service),
     audit: AuditService = Depends(get_audit_service),
 ):
+    """
+    Validates the OTP. On success returns the departments linked to this mobile
+    number so the user can pick one. The OTP is NOT consumed here — call
+    /select-department with the same OTP to complete login.
+    """
     ip = get_client_ip(request)
-    token = service.verify_otp(body.mobile_number, body.otp, body.department_id)
+    departments = service.verify_otp(body.mobile_number, body.otp)
+    if departments is None:
+        audit.log(
+            "admin_otp_verify_failed", "auth",
+            details={"mobile": body.mobile_number},
+            ip_address=ip,
+            status="failure",
+        )
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired OTP.",
+        )
+    audit.log("admin_otp_verified", "auth", details={"mobile": body.mobile_number}, ip_address=ip)
+    return {"departments": departments}
+
+
+@router.post("/select-department", response_model=TokenResponse)
+def select_department(
+    body: AdminCompleteLoginRequest,
+    request: Request,
+    service: AdminAuthService = Depends(get_admin_auth_service),
+    audit: AuditService = Depends(get_audit_service),
+):
+    """
+    Final login step: re-verifies the OTP for the specific (mobile, department_id)
+    user, marks it as used, and returns a JWT access token.
+    """
+    ip = get_client_ip(request)
+    token = service.complete_login(body.mobile_number, body.otp, body.department_id)
     if not token:
         audit.log(
             "admin_login_failed", "auth",
@@ -66,7 +98,7 @@ def verify_admin_otp(
         )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired OTP.",
+            detail="Invalid or expired OTP, or department not linked to this account.",
         )
     payload = decode_access_token(token)
     actor_id = int(payload["sub"]) if payload and "sub" in payload else None
