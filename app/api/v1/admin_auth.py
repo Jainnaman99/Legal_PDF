@@ -2,9 +2,10 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
-from app.core.dependencies import get_admin_auth_service, get_audit_service
+from app.core.dependencies import get_admin_auth_service, get_audit_service, get_current_user
 from app.core.security import decode_access_token
-from app.schemas.auth import AdminOtpRequest, AdminOtpVerifyRequest, AdminCompleteLoginRequest, TokenResponse
+from app.models.user import User
+from app.schemas.auth import AdminOtpRequest, AdminOtpVerifyRequest, AdminCompleteLoginRequest, AdminSwitchDeptRequest, TokenResponse
 from app.services.admin_auth_service import AdminAuthService
 from app.services.audit_service import AuditService
 from app.utils.request_utils import get_client_ip
@@ -106,6 +107,43 @@ def select_department(
         "admin_login", "auth",
         actor_user_id=actor_id, entity_id=actor_id,
         details={"mobile": body.mobile_number, "department_id": body.department_id},
+        ip_address=ip,
+    )
+    return TokenResponse(access_token=token)
+
+
+@router.post("/switch-department", response_model=TokenResponse)
+def switch_department(
+    body: AdminSwitchDeptRequest,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    service: AdminAuthService = Depends(get_admin_auth_service),
+    audit: AuditService = Depends(get_audit_service),
+):
+    """
+    Authenticated admin/super_admin switches to a different department linked to
+    the same mobile number.  Returns a new JWT for the target department account.
+    No OTP is required since the caller is already authenticated.
+    """
+    ip = get_client_ip(request)
+    mobile = getattr(current_user, "mobile_number", None)
+    if not mobile:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No mobile number associated with this account.",
+        )
+    token = service.switch_department(mobile, body.department_id)
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Department not linked to this mobile account, or account is inactive.",
+        )
+    payload = decode_access_token(token)
+    actor_id = int(payload["sub"]) if payload and "sub" in payload else None
+    audit.log(
+        "admin_dept_switch", "auth",
+        actor_user_id=actor_id, entity_id=actor_id,
+        details={"from_user_id": current_user.id, "to_department_id": body.department_id},
         ip_address=ip,
     )
     return TokenResponse(access_token=token)

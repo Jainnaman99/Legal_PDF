@@ -82,6 +82,20 @@ class AdminAuthService:
 
         return departments
 
+    def switch_department(self, mobile_number: str, department_id: int) -> Optional[str]:
+        """
+        Already-authenticated admin switches to a different department linked to
+        the same mobile number.  No OTP required — the caller must already hold
+        a valid JWT.
+        """
+        user = self._user_repo.get_by_mobile_and_dept(mobile_number.strip(), department_id)
+        if not user or not user.is_active:
+            return None
+        if not user.role or user.role.name not in _ADMIN_ROLES:
+            return None
+        fresh_user = self._user_repo.get_by_id(user.id)
+        return build_user_token(fresh_user)
+
     def complete_login(self, mobile_number: str, otp: str, department_id: int) -> Optional[str]:
         """
         Final login step: find the specific user by (mobile, department_id), re-verify

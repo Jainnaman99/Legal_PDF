@@ -110,6 +110,10 @@ class AdminCompleteLoginRequest(BaseModel):
     department_id: int
 
 
+class AdminSwitchDeptRequest(BaseModel):
+    department_id: int
+
+
 class FirstLoginOtpSentResponse(BaseModel):
     masked_mobile: str
     message: str
