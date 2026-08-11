@@ -51,6 +51,8 @@ class IUserRepository(ABC):
         is_active: Optional[bool] = None,
         role_id: Optional[int] = None,
         department_id: Optional[int] = None,
+        approver_id: Optional[int] = None,
+        mobile_number: Optional[str] = None,
     ) -> Optional[User]:
         ...
 

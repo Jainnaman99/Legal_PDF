@@ -119,6 +119,8 @@ class UserRepository(IUserRepository):
         is_active: Optional[bool] = None,
         role_id: Optional[int] = None,
         department_id: Optional[int] = None,
+        approver_id: Optional[int] = None,
+        mobile_number: Optional[str] = None,
     ) -> Optional[User]:
         try:
             result = self._db.execute(
@@ -134,6 +136,16 @@ class UserRepository(IUserRepository):
                 },
             )
             row = result.mappings().fetchone()
+            if approver_id is not None:
+                self._db.execute(
+                    text("UPDATE users SET approver_id = :aid WHERE id = :uid"),
+                    {"aid": approver_id, "uid": user_id},
+                )
+            if mobile_number is not None:
+                self._db.execute(
+                    text("UPDATE users SET mobile_number = :mob WHERE id = :uid"),
+                    {"mob": mobile_number, "uid": user_id},
+                )
             self._db.commit()
             return self._map_row(row) if row else None
         except IntegrityError as e:
@@ -154,7 +166,20 @@ class UserRepository(IUserRepository):
             text("CALL sp_list_users(:skip, :limit, :exclude_user_id, :department_ids)"),
             {"skip": skip, "limit": limit, "exclude_user_id": exclude_user_id, "department_ids": department_ids},
         )
-        return [self._map_row(row) for row in result.mappings().fetchall()]
+        users = [self._map_row(row) for row in result.mappings().fetchall()]
+        if users:
+            id_csv = ",".join(str(u.id) for u in users)
+            approver_rows = self._db.execute(
+                text(f"SELECT id, approver_id, mobile_number FROM users WHERE id IN ({id_csv})")
+            ).mappings().fetchall()
+            extra = {r["id"]: r for r in approver_rows}
+            for u in users:
+                row = extra.get(u.id)
+                if row:
+                    u.approver_id = row["approver_id"]
+                    if not u.mobile_number:
+                        u.mobile_number = row["mobile_number"]
+        return users
 
     def change_password(self, user_id: int, hashed_password: str) -> None:
         self._db.execute(

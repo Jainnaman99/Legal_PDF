@@ -42,6 +42,8 @@ class UserOut(BaseModel):
     role: Optional[RoleOut] = None
     department: Optional[DepartmentOut] = None
     departments: list[DepartmentOut] = []
+    approver_id: Optional[int] = None
+    mobile_number: Optional[str] = None
     created_at: datetime
     last_login: Optional[datetime] = None
 
@@ -84,6 +86,7 @@ class UserUpdate(BaseModel):
     role_id: Optional[int] = None
     department_id: Optional[str] = None
     mobile_number: Optional[str] = None
+    approver_id: Optional[int] = None
 
     @field_validator('email', mode='before')
     @classmethod

@@ -164,6 +164,8 @@ def update_user(
             is_active=body.is_active,
             role_id=body.role_id,
             department_id=body.department_id,
+            approver_id=body.approver_id,
+            mobile_number=body.mobile_number,
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
