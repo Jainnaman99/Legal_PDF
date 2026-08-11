@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.interfaces.act_parts_repository import IActPartsRepository
+from app.interfaces.cap_request_repository import ICapRequestRepository
 from app.interfaces.dept_role_limit_repository import IDeptRoleLimitRepository
 from app.interfaces.act_structure_repository import IActStructureRepository
 from app.interfaces.admin_otp_repository import IAdminOtpRepository
@@ -21,6 +22,7 @@ from app.interfaces.tag_repository import ITagRepository
 from app.interfaces.user_repository import IUserRepository
 from app.models.user import User
 from app.repositories.act_parts_repository import ActPartsRepository
+from app.repositories.cap_request_repository import CapRequestRepository
 from app.repositories.dept_role_limit_repository import DeptRoleLimitRepository
 from app.repositories.act_structure_repository import ActStructureRepository
 from app.repositories.admin_otp_repository import AdminOtpRepository
@@ -96,6 +98,10 @@ def get_login_log_repository(db: Session = Depends(get_db)) -> ILoginLogReposito
 
 def get_dept_role_limit_repository(db: Session = Depends(get_db)) -> IDeptRoleLimitRepository:
     return DeptRoleLimitRepository(db)
+
+
+def get_cap_request_repository(db: Session = Depends(get_db)) -> ICapRequestRepository:
+    return CapRequestRepository(db)
 
 
 def get_auth_service(
