@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 
 
 class LoginRequest(BaseModel):
@@ -84,6 +84,13 @@ class UserUpdate(BaseModel):
     role_id: Optional[int] = None
     department_id: Optional[str] = None
     mobile_number: Optional[str] = None
+
+    @field_validator('email', mode='before')
+    @classmethod
+    def empty_email_to_none(cls, v):
+        if isinstance(v, str) and not v.strip():
+            return None
+        return v
 
 
 class DepartmentCreate(BaseModel):

@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
-from app.core.dependencies import get_audit_service, get_current_user, get_department_service, get_user_repository, require_roles
+from app.core.dependencies import get_audit_service, get_current_user, get_department_service, get_dept_role_limit_repository, get_user_repository, require_roles
+from app.interfaces.dept_role_limit_repository import IDeptRoleLimitRepository
 from app.interfaces.user_repository import IUserRepository
 from app.models.user import User
 from app.schemas.auth import DepartmentOut, UserOut, UserUpdate
@@ -8,7 +9,7 @@ from app.services.audit_service import AuditService
 from app.services.department_service import DepartmentService
 from app.utils.request_utils import get_client_ip
 
-_MAX_USERS_PER_DEPT_ROLE = 2
+_DEFAULT_MAX_USERS = 5  # fallback when no custom limit is configured
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -94,6 +95,7 @@ def update_user(
     request: Request,
     current_user: User = Depends(_manage_users),
     repo: IUserRepository = Depends(get_user_repository),
+    limit_repo: IDeptRoleLimitRepository = Depends(get_dept_role_limit_repository),
     audit: AuditService = Depends(get_audit_service),
 ):
     target = repo.get_by_id(body.user_id)
@@ -134,17 +136,23 @@ def update_user(
     if body.department_id is not None and body.department_id != target.department_id:
         changes["department_id"] = {"old": target.department_id, "new": body.department_id}
 
-    # Resolve the effective role and department after the update
-    effective_role_id = body.role_id if body.role_id is not None else target.role_id
-    effective_dept_id = body.department_id if body.department_id is not None else target.department_id
-    if effective_role_id and effective_dept_id:
+    # Resolve the effective role, department, and active status after the update
+    effective_role_id   = body.role_id      if body.role_id      is not None else target.role_id
+    effective_dept_id   = body.department_id if body.department_id is not None else target.department_id
+    effective_is_active = body.is_active    if body.is_active    is not None else target.is_active
+    # Only enforce the per-dept-role cap when the user will be active after the update.
+    # Deactivating a user should never be blocked by the cap.
+    if effective_role_id and effective_dept_id and effective_is_active:
         dept_ids = [d.strip() for d in str(effective_dept_id).split(",") if d.strip().isdigit()]
         for dept_id in dept_ids:
+            max_allowed = limit_repo.get_limit(int(dept_id), effective_role_id)
+            if max_allowed is None:
+                max_allowed = _DEFAULT_MAX_USERS
             count = repo.count_by_dept_and_role(int(dept_id), effective_role_id, exclude_user_id=body.user_id)
-            if count >= _MAX_USERS_PER_DEPT_ROLE:
+            if count >= max_allowed:
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
-                    detail=f"Department already has the maximum of {_MAX_USERS_PER_DEPT_ROLE} active users for this role.",
+                    detail=f"Department already has the maximum of {max_allowed} active users for this role.",
                 )
 
     try:
