@@ -48,6 +48,21 @@ class UserRepository(IUserRepository):
         row = result.mappings().fetchone()
         return self._map_row_auth(row) if row else None
 
+    def get_all_admin_by_mobile(self, mobile_number: str) -> list[User]:
+        result = self._db.execute(
+            text("CALL sp_get_admin_users_by_mobile(:mobile_number)"),
+            {"mobile_number": mobile_number},
+        )
+        return [self._map_row_auth(row) for row in result.mappings().fetchall()]
+
+    def get_by_mobile_and_dept(self, mobile_number: str, department_id: int) -> Optional[User]:
+        result = self._db.execute(
+            text("CALL sp_get_admin_user_by_mobile_and_dept(:mobile_number, :dept_id)"),
+            {"mobile_number": mobile_number, "dept_id": department_id},
+        )
+        row = result.mappings().fetchone()
+        return self._map_row_auth(row) if row else None
+
     def get_by_email(self, email: str) -> Optional[User]:
         result = self._db.execute(
             text("CALL sp_get_user_by_email(:email)"),

@@ -32,28 +32,43 @@ class AdminAuthService:
     def _hash_otp(otp: str) -> str:
         return hashlib.sha256(otp.encode()).hexdigest()
 
-    def request_otp(self, mobile_number: str) -> str:
+    def request_otp(self, mobile_number: str):
         """
-        Generate a login OTP for the given mobile number and return it.
-        Raises ValueError if the number is not linked to an active admin account.
+        Find all active admin users with this mobile, send one OTP (stored for each
+        matching user), and return (otp, departments, sms_response).
+        departments is a list of {"id": int, "name": str} for the frontend picker.
         """
-        user = self._user_repo.get_by_mobile(mobile_number.strip())
-        if not user or not user.is_active:
-            raise ValueError("No active account found with this mobile number.")
-        if not user.role or user.role.name not in _ADMIN_ROLES:
-            raise ValueError("This login method is only available for administrators.")
+        users = self._user_repo.get_all_admin_by_mobile(mobile_number.strip())
+        if not users:
+            raise ValueError("No active admin account found with this mobile number.")
 
-        otp = self._generate_otp()
+        otp        = self._generate_otp()
         expires_at = datetime.now(timezone.utc) + timedelta(minutes=_OTP_TTL_MINUTES)
-        self._otp_repo.create(user.id, self._hash_otp(otp), expires_at)
-        sms_response = self._sms_svc.send_admin_login_otp(mobile_number, otp)
-        return otp, sms_response
+        otp_hash   = self._hash_otp(otp)
 
-    def verify_otp(self, mobile_number: str, otp: str) -> Optional[str]:
+        # Store the same OTP for every matching user so any of them can verify.
+        for user in users:
+            self._otp_repo.create(user.id, otp_hash, expires_at)
+
+        sms_response = self._sms_svc.send_admin_login_otp(mobile_number, otp)
+
+        # Build a deduplicated department list for the selection step.
+        departments = []
+        seen = set()
+        for user in users:
+            for dept in (user.departments or []):
+                if dept.id not in seen:
+                    seen.add(dept.id)
+                    departments.append({"id": dept.id, "name": dept.name})
+
+        return otp, departments, sms_response
+
+    def verify_otp(self, mobile_number: str, otp: str, department_id: int) -> Optional[str]:
         """
-        Verify the OTP and return a JWT on success, or None on failure.
+        Verify the OTP for the user identified by (mobile_number, department_id).
+        Returns a JWT on success, None on failure.
         """
-        user = self._user_repo.get_by_mobile(mobile_number.strip())
+        user = self._user_repo.get_by_mobile_and_dept(mobile_number.strip(), department_id)
         if not user or not user.is_active:
             return None
         if not user.role or user.role.name not in _ADMIN_ROLES:

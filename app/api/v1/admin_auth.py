@@ -23,7 +23,7 @@ def request_admin_otp(
 ):
     ip = get_client_ip(request)
     try:
-        otp, sms_response = service.request_otp(body.mobile_number)
+        otp, departments, sms_response = service.request_otp(body.mobile_number)
     except ValueError as exc:
         audit.log(
             "admin_otp_request_failed", "auth",
@@ -39,7 +39,13 @@ def request_admin_otp(
             detail="Could not send OTP. Please try again later.",
         )
     audit.log("admin_otp_requested", "auth", details={"mobile": body.mobile_number}, ip_address=ip)
-    return {"message": "OTP generated. Valid for 10 minutes.", "sms_response": sms_response}
+    return {
+        "message": "OTP generated. Valid for 10 minutes.",
+        "departments": departments,
+        "sms_response": sms_response,
+        # TODO: remove 'otp' once real SMS delivery is confirmed in production
+        "otp": otp,
+    }
 
 
 @router.post("/verify-otp", response_model=TokenResponse)
@@ -50,11 +56,11 @@ def verify_admin_otp(
     audit: AuditService = Depends(get_audit_service),
 ):
     ip = get_client_ip(request)
-    token = service.verify_otp(body.mobile_number, body.otp)
+    token = service.verify_otp(body.mobile_number, body.otp, body.department_id)
     if not token:
         audit.log(
             "admin_login_failed", "auth",
-            details={"mobile": body.mobile_number},
+            details={"mobile": body.mobile_number, "department_id": body.department_id},
             ip_address=ip,
             status="failure",
         )
@@ -64,5 +70,10 @@ def verify_admin_otp(
         )
     payload = decode_access_token(token)
     actor_id = int(payload["sub"]) if payload and "sub" in payload else None
-    audit.log("admin_login", "auth", actor_user_id=actor_id, entity_id=actor_id, details={"mobile": body.mobile_number}, ip_address=ip)
+    audit.log(
+        "admin_login", "auth",
+        actor_user_id=actor_id, entity_id=actor_id,
+        details={"mobile": body.mobile_number, "department_id": body.department_id},
+        ip_address=ip,
+    )
     return TokenResponse(access_token=token)

@@ -69,6 +69,14 @@ class IUserRepository(ABC):
         ...
 
     @abstractmethod
+    def get_all_admin_by_mobile(self, mobile_number: str) -> list[User]:
+        ...
+
+    @abstractmethod
+    def get_by_mobile_and_dept(self, mobile_number: str, department_id: int) -> Optional[User]:
+        ...
+
+    @abstractmethod
     def change_password(self, user_id: int, hashed_password: str) -> None:
         ...
 
