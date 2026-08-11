@@ -61,8 +61,8 @@ def verify_admin_otp(
     /select-department with the same OTP to complete login.
     """
     ip = get_client_ip(request)
-    departments = service.verify_otp(body.mobile_number, body.otp)
-    if departments is None:
+    result = service.verify_otp(body.mobile_number, body.otp)
+    if result is None:
         audit.log(
             "admin_otp_verify_failed", "auth",
             details={"mobile": body.mobile_number},
@@ -74,7 +74,9 @@ def verify_admin_otp(
             detail="Invalid or expired OTP.",
         )
     audit.log("admin_otp_verified", "auth", details={"mobile": body.mobile_number}, ip_address=ip)
-    return {"departments": departments}
+    # result is {"token": <str|None>, "departments": [...]}
+    # token is present when a super_admin was found and logged in directly.
+    return result
 
 
 @router.post("/select-department", response_model=TokenResponse)

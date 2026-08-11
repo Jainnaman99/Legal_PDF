@@ -8,8 +8,9 @@ from app.interfaces.admin_otp_repository import IAdminOtpRepository
 from app.interfaces.user_repository import IUserRepository
 from app.services.sms_service import SmsService
 
-_OTP_TTL_MINUTES = 10
-_ADMIN_ROLES = {"super Admin", "admin"}
+_OTP_TTL_MINUTES  = 10
+_SUPER_ADMIN_ROLE = "super Admin"
+_ADMIN_ROLES      = {_SUPER_ADMIN_ROLE}  # Only super_admin uses OTP; admin uses password login
 
 
 class AdminAuthService:
@@ -34,12 +35,13 @@ class AdminAuthService:
 
     def request_otp(self, mobile_number: str):
         """
-        Find all active admin users with this mobile, send one OTP (stored for each
-        matching user), and return (otp, sms_response).
+        Find the active super_admin user for this mobile, send an OTP, and return
+        (otp, sms_response).  Admin users authenticate via username/password, not OTP.
         """
-        users = self._user_repo.get_all_admin_by_mobile(mobile_number.strip())
+        all_users = self._user_repo.get_all_admin_by_mobile(mobile_number.strip())
+        users = [u for u in all_users if u.role and u.role.name == _SUPER_ADMIN_ROLE]
         if not users:
-            raise ValueError("No active admin account found with this mobile number.")
+            raise ValueError("No active super admin account found with this mobile number.")
 
         otp        = self._generate_otp()
         expires_at = datetime.now(timezone.utc) + timedelta(minutes=_OTP_TTL_MINUTES)
@@ -51,36 +53,52 @@ class AdminAuthService:
         sms_response = self._sms_svc.send_admin_login_otp(mobile_number, otp)
         return otp, sms_response
 
-    def verify_otp(self, mobile_number: str, otp: str) -> Optional[list[dict]]:
+    def verify_otp(self, mobile_number: str, otp: str) -> Optional[dict]:
         """
         Validate the OTP against any admin user with this mobile.
-        Returns the departments list if the OTP is correct (does NOT mark it as used yet —
-        the user still needs to select a department via complete_login).
-        Returns None if OTP is invalid or expired.
+
+        Super Admin: OTP is consumed immediately and a JWT is returned directly
+        (no department-selection step needed — super_admin is not scoped to a dept).
+
+        Admin: OTP is left unconsumed and the department list is returned so the
+        caller can present a picker and complete login via complete_login().
+
+        Returns None if the OTP is invalid or expired.
         """
-        users = self._user_repo.get_all_admin_by_mobile(mobile_number.strip())
+        all_users = self._user_repo.get_all_admin_by_mobile(mobile_number.strip())
+        users = [u for u in all_users if u.role and u.role.name == _SUPER_ADMIN_ROLE]
         if not users:
             return None
 
         otp_hash = self._hash_otp(otp)
-        # Check OTP against any matching user — all share the same hash.
+        matched_record = None
         for user in users:
             record = self._otp_repo.get_valid(user.id)
             if record and record["otp_hash"] == otp_hash:
+                matched_record = record
                 break
-        else:
-            return None  # No valid matching OTP found
+        if not matched_record:
+            return None
 
-        # Build deduplicated department list.
-        departments = []
-        seen = set()
-        for user in users:
-            for dept in (user.departments or []):
+        # Super Admin — consume OTP and issue JWT immediately (no dept selection).
+        super_admin = next(
+            (u for u in users if u.role and u.role.name == "super Admin"), None
+        )
+        if super_admin:
+            self._otp_repo.mark_used(matched_record["id"])
+            fresh_user = self._user_repo.get_by_id(super_admin.id)
+            token = build_user_token(fresh_user)
+            return {"token": token, "departments": []}
+
+        # Admin — return department list for selection (OTP not yet consumed).
+        departments: list[dict] = []
+        seen: set[int] = set()
+        for u in users:
+            for dept in (u.departments or []):
                 if dept.id not in seen:
                     seen.add(dept.id)
                     departments.append({"id": dept.id, "name": dept.name})
-
-        return departments
+        return {"token": None, "departments": departments}
 
     def _all_departments_for_mobile(self, mobile_number: str) -> list:
         """Collect every unique department linked to this mobile across all admin users."""
