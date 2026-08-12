@@ -42,6 +42,20 @@ class PDFService:
         with open(file_path, "wb") as f:
             f.write(content)
 
+        # Convert DOCX → PDF before any further processing
+        stored_size = len(content)
+        if os.path.splitext(file.filename or "")[1].lower() == ".docx":
+            from app.services.docx_converter import convert_docx_to_pdf
+            pdf_path = convert_docx_to_pdf(file_path)
+            if pdf_path:
+                try:
+                    os.remove(file_path)
+                except OSError:
+                    pass
+                file_path   = pdf_path
+                unique_name = os.path.basename(pdf_path)
+                stored_size = os.path.getsize(pdf_path)
+
         # Extract text — reject the file early if nothing is readable
         pages: list[tuple[int, str]] = []
         try:
@@ -69,7 +83,7 @@ class PDFService:
         return FileUploadResponse(
             file_ref=unique_name,
             original_filename=file.filename,
-            file_size=len(content),
+            file_size=stored_size,
             summary=summary,
         )
 
