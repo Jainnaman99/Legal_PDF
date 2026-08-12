@@ -40,11 +40,10 @@ class Settings(BaseSettings):
     SMTP_FROM:     str = ""
 
     # BSNL SMS — set in .env for production
-    BSNL_USERNAME:         str = ""
-    BSNL_KEY:              str = ""
-    BSNL_SENDER_ID:        str = "GOVHRY"
-    BSNL_ENTITY_ID:        str = ""
-    BSNL_OTP_TEMPLATE_ID:  str = ""
+    BSNL_USERNAME:  str = ""
+    BSNL_KEY:       str = ""
+    BSNL_SENDER_ID: str = "GOVHRY"
+    BSNL_ENTITY_ID: str = ""
 
     @field_validator("SMTP_PORT", mode="before")
     @classmethod
