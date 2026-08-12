@@ -22,6 +22,13 @@ class SmsService:
             template_id=TEMPLATE_LOGIN_OTP,
         )
 
+    def send_verification_otp(self, to_number: str, otp: str) -> str:
+        return self._send(
+            to_number,
+            f"Your OTP for logging in to Haryana Government Digital Repository Portal is {otp}. Please do not share with anyone. Team HGDR.",
+            template_id=TEMPLATE_LOGIN_OTP,
+        )
+
     def send_otp(self, to_number: str, otp: str) -> str:
         return self._send(
             to_number,

@@ -66,7 +66,7 @@ class ResetService:
         otp = self._generate_otp()
         expires_at = datetime.now(timezone.utc) + timedelta(minutes=_OTP_TTL_MINUTES)
         self._otp_repo.create(user.id, self._hash_otp(otp), "sms", expires_at)
-        self._sms_svc.send_otp(user.mobile_number, otp)
+        self._sms_svc.send_verification_otp(user.mobile_number, otp)
 
     def verify_and_reset(self, username: str, otp: str, new_password: str) -> Optional[str]:
         """
