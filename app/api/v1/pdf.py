@@ -713,6 +713,10 @@ def get_pdf_file(
                 media_type="application/pdf",
                 headers={"Content-Disposition": f'inline; filename="{pdf_name}"'},
             )
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Could not convert document to PDF. Please contact support.",
+        )
 
     return FileResponse(fp, media_type="application/pdf", filename=doc.original_filename or "document", content_disposition_type="inline")
 
