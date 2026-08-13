@@ -41,7 +41,7 @@ class AdminAuthService:
         all_users = self._user_repo.get_all_admin_by_mobile(mobile_number.strip())
         users = [u for u in all_users if u.role and u.role.name == _SUPER_ADMIN_ROLE]
         if not users:
-            raise ValueError("No active super admin account found with this mobile number.")
+            raise ValueError("No active admin account found with this mobile number.")
 
         otp        = self._generate_otp()
         expires_at = datetime.now(timezone.utc) + timedelta(minutes=_OTP_TTL_MINUTES)
