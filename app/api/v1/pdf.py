@@ -2,7 +2,7 @@ import os
 from typing import Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 
 from app.core.config import settings
 from app.core.dependencies import get_act_parts_service, get_audit_service, get_current_user, get_pdf_service, get_rag_service, require_roles
@@ -701,11 +701,20 @@ def get_pdf_file(
     if not os.path.exists(fp):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found on server")
     ext = os.path.splitext(fp)[1].lower()
-    media_type = (
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        if ext == ".docx" else "application/pdf"
-    )
-    return FileResponse(fp, media_type=media_type, filename=doc.original_filename or "document", content_disposition_type="inline")
+
+    if ext == ".docx":
+        from app.services.docx_converter import convert_docx_to_pdf_bytes
+        pdf_bytes = convert_docx_to_pdf_bytes(fp)
+        if pdf_bytes:
+            original = doc.original_filename or "document"
+            pdf_name = os.path.splitext(original)[0] + ".pdf"
+            return Response(
+                content=pdf_bytes,
+                media_type="application/pdf",
+                headers={"Content-Disposition": f'inline; filename="{pdf_name}"'},
+            )
+
+    return FileResponse(fp, media_type="application/pdf", filename=doc.original_filename or "document", content_disposition_type="inline")
 
 
 @router.get(
