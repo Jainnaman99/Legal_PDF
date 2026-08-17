@@ -210,6 +210,19 @@ class PDFRepository(IPDFRepository):
             text("UPDATE pdf_documents SET status='pending' WHERE id=:id AND status='rejected'"),
             {"id": document_id},
         )
+        self._db.execute(
+            text("""
+                UPDATE pdf_document_approvals pda
+                JOIN (
+                    SELECT id FROM pdf_document_approvals
+                    WHERE pdf_id = :id
+                    ORDER BY acted_at DESC
+                    LIMIT 1
+                ) latest ON pda.id = latest.id
+                SET pda.annotations_json = NULL
+            """),
+            {"id": document_id},
+        )
         self._db.commit()
 
     def get_by_id(self, document_id: int) -> Optional[PDFDocument]:
