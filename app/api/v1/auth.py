@@ -95,6 +95,15 @@ def login(
     return TokenResponse(access_token=token)
 
 
+@router.post("/refresh", response_model=TokenResponse)
+def refresh_token(
+    current_user: User = Depends(get_current_user),
+):
+    """Issue a fresh token for an authenticated user who is still active."""
+    token = build_user_token(current_user)
+    return TokenResponse(access_token=token)
+
+
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 def logout(
     request: Request,
