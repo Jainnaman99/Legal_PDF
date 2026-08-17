@@ -7,8 +7,8 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import settings
 
-_SENTINEL = object()
 _audit_user_id: ContextVar[int | None] = ContextVar("_audit_user_id", default=None)
+_SENTINEL = object()
 
 
 def set_audit_user_id(user_id: int | None) -> None:

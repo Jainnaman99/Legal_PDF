@@ -3,7 +3,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
-from app.db.session import get_db, set_audit_user_id
+from app.db.session import get_db
 from app.interfaces.act_parts_repository import IActPartsRepository
 from app.interfaces.cap_request_repository import ICapRequestRepository
 from app.interfaces.dept_role_limit_repository import IDeptRoleLimitRepository
@@ -190,7 +190,6 @@ def get_current_user(
             detail="Invalid or expired token",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    set_audit_user_id(user.id)
     return user
 
 
