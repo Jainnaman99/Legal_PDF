@@ -96,6 +96,10 @@ def create_document(
     audit: AuditService = Depends(get_audit_service),
 ):
     doc_status = body.status if body.status in ("pending", "draft") else "pending"
+    if doc_status == "pending":
+        missing = [f for f, v in [("document_name", body.document_name), ("document_type_id", body.document_type_id), ("issue_date", body.issue_date)] if v is None]
+        if missing:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=f"Required for submission: {', '.join(missing)}")
     try:
         doc = service.create_from_ref(
             file_ref=body.file_ref,

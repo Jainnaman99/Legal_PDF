@@ -67,9 +67,9 @@ class AnnotationDraftResponse(BaseModel):
 
 class PDFCreateRequest(BaseModel):
     file_ref: str
-    document_type_id: int
-    document_name: str
-    issue_date: date
+    document_type_id: Optional[int] = None
+    document_name: Optional[str] = None
+    issue_date: Optional[date] = None
     status: Optional[str] = "pending"
 
     # Shared optional fields
