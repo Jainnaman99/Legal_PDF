@@ -13,6 +13,7 @@ from app.interfaces.audit_log_repository import IAuditLogRepository
 from app.interfaces.department_repository import IDepartmentRepository
 from app.interfaces.document_type_repository import IDocumentTypeRepository
 from app.interfaces.login_log_repository import ILoginLogRepository
+from app.interfaces.pdf_approval_draft_repository import IPDFApprovalDraftRepository
 from app.interfaces.pdf_approval_repository import IPDFApprovalRepository
 from app.interfaces.pdf_page_repository import IPDFPageRepository
 from app.interfaces.pdf_repository import IPDFRepository
@@ -30,6 +31,7 @@ from app.repositories.audit_log_repository import AuditLogRepository
 from app.repositories.department_repository import DepartmentRepository
 from app.repositories.document_type_repository import DocumentTypeRepository
 from app.repositories.login_log_repository import LoginLogRepository
+from app.repositories.pdf_approval_draft_repository import PDFApprovalDraftRepository
 from app.repositories.pdf_approval_repository import PDFApprovalRepository
 from app.repositories.pdf_page_repository import PDFPageRepository
 from app.repositories.pdf_repository import PDFRepository
@@ -122,6 +124,10 @@ def get_tag_repository(db: Session = Depends(get_db)) -> ITagRepository:
 
 def get_pdf_approval_repository(db: Session = Depends(get_db)) -> IPDFApprovalRepository:
     return PDFApprovalRepository(db)
+
+
+def get_draft_repository(db: Session = Depends(get_db)) -> IPDFApprovalDraftRepository:
+    return PDFApprovalDraftRepository(db)
 
 
 _vs_instance: "VectorStoreService | None" = None

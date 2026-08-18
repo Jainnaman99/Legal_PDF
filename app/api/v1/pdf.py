@@ -5,7 +5,8 @@ from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, Upl
 from fastapi.responses import FileResponse, Response
 
 from app.core.config import settings
-from app.core.dependencies import get_act_parts_service, get_audit_service, get_current_user, get_pdf_service, get_rag_service, require_roles
+from app.core.dependencies import get_act_parts_service, get_audit_service, get_current_user, get_draft_repository, get_pdf_service, get_rag_service, require_roles
+from app.interfaces.pdf_approval_draft_repository import IPDFApprovalDraftRepository
 from app.models.user import User
 from app.schemas.audit import AuditLogOut
 from app.schemas.pdf import (
@@ -13,6 +14,8 @@ from app.schemas.pdf import (
     ActChildrenResponse,
     ActFullDetailResponse,
     AllDepartmentLinkItem,
+    AnnotationDraftRequest,
+    AnnotationDraftResponse,
     DepartmentLinkItem,
     DocumentNameItem,
     DocumentNameSearchResponse,
@@ -92,6 +95,7 @@ def create_document(
     service: PDFService = Depends(get_pdf_service),
     audit: AuditService = Depends(get_audit_service),
 ):
+    doc_status = body.status if body.status in ("pending", "draft") else "pending"
     try:
         doc = service.create_from_ref(
             file_ref=body.file_ref,
@@ -130,11 +134,12 @@ def create_document(
             keywords=body.keywords,
             is_repealed=body.is_repealed,
             last_updated_on=body.last_updated_on,
+            status=doc_status,
         )
     except FileNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     audit.log(
-        "pdf_created", "pdf",
+        "pdf_draft_saved" if doc_status == "draft" else "pdf_created", "pdf",
         actor_user_id=current_user.id,
         entity_id=doc.id,
         details={"document_name": body.document_name, "document_type_id": body.document_type_id, "department_id": current_user.department_id, "file_ref": body.file_ref},
@@ -173,6 +178,7 @@ def review_document(
     current_user: User = Depends(_approver_roles),
     service: PDFService = Depends(get_pdf_service),
     audit: AuditService = Depends(get_audit_service),
+    draft_repo: IPDFApprovalDraftRepository = Depends(get_draft_repository),
 ):
     if body.action not in ("approved", "rejected"):
         raise HTTPException(
@@ -182,6 +188,7 @@ def review_document(
     doc = service.review_document(body.pdf_id, current_user.id, body.action, body.comments, body.annotations_json)
     if not doc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+    draft_repo.delete(body.pdf_id, current_user.id)
     audit.log(
         f"pdf_{body.action}", "pdf",
         actor_user_id=current_user.id,
@@ -190,6 +197,37 @@ def review_document(
         ip_address=get_client_ip(request),
     )
     return doc
+
+
+@router.post(
+    "/annotation-draft",
+    response_model=AnnotationDraftResponse,
+    summary="Save or update an annotation draft for a document (approver only)",
+)
+def save_annotation_draft(
+    body: AnnotationDraftRequest,
+    current_user: User = Depends(_approver_roles),
+    draft_repo: IPDFApprovalDraftRepository = Depends(get_draft_repository),
+):
+    draft_repo.upsert(body.pdf_id, current_user.id, body.comments, body.annotations_json)
+    row = draft_repo.get(body.pdf_id, current_user.id)
+    return AnnotationDraftResponse(**row)
+
+
+@router.get(
+    "/{pdf_id}/annotation-draft",
+    response_model=AnnotationDraftResponse,
+    summary="Fetch the current approver's annotation draft for a document",
+)
+def get_annotation_draft(
+    pdf_id: int,
+    current_user: User = Depends(_approver_roles),
+    draft_repo: IPDFApprovalDraftRepository = Depends(get_draft_repository),
+):
+    row = draft_repo.get(pdf_id, current_user.id)
+    if not row:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No annotation draft found")
+    return AnnotationDraftResponse(**row)
 
 
 @router.get(
@@ -333,7 +371,7 @@ def update_document(
     ):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorised to edit this document")
 
-    was_rejected = doc.status == "rejected"
+    was_rejected_or_draft = doc.status in ("rejected", "draft")
     updated = service.update_document(
         document_id=document_id,
         tag_ids=body.tag_ids,
@@ -371,7 +409,7 @@ def update_document(
         is_repealed=body.is_repealed,
         last_updated_on=body.last_updated_on,
     )
-    if body.resubmit and was_rejected:
+    if body.resubmit and was_rejected_or_draft:
         service.resubmit_document(document_id)
         if updated:
             updated.status = "pending"

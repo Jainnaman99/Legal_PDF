@@ -111,6 +111,7 @@ class PDFService:
         keywords: Optional[str] = None,
         is_repealed: bool = False,
         last_updated_on: Optional[date] = None,
+        status: str = "pending",
     ) -> PDFDocument:
         file_path = os.path.join(settings.UPLOAD_DIR, file_ref)
         if not os.path.exists(file_path):
@@ -169,6 +170,7 @@ class PDFService:
             keywords=keywords,
             is_repealed=is_repealed,
             last_updated_on=last_updated_on,
+            status=status,
         )
 
         # Save tags and relationships immediately after create (while session is clean).

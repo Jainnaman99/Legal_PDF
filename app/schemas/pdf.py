@@ -47,6 +47,22 @@ class RelationshipRef(BaseModel):
     type: str
 
 
+# ── Annotation draft ─────────────────────────────────────────
+
+class AnnotationDraftRequest(BaseModel):
+    pdf_id: int
+    comments: Optional[str] = None
+    annotations_json: Optional[str] = None
+
+
+class AnnotationDraftResponse(BaseModel):
+    pdf_id: int
+    approver_id: int
+    comments: Optional[str] = None
+    annotations_json: Optional[str] = None
+    saved_at: datetime
+
+
 # ── Document create request (Step 2) ─────────────────────────
 
 class PDFCreateRequest(BaseModel):
@@ -54,6 +70,7 @@ class PDFCreateRequest(BaseModel):
     document_type_id: int
     document_name: str
     issue_date: date
+    status: Optional[str] = "pending"
 
     # Shared optional fields
     reference_number: Optional[str] = None

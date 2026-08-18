@@ -56,6 +56,7 @@ class PDFRepository(IPDFRepository):
         keywords: Optional[str] = None,
         is_repealed: bool = False,
         last_updated_on: Optional[date] = None,
+        status: str = "pending",
     ) -> PDFDocument:
         result = self._db.execute(
             text(
@@ -68,7 +69,7 @@ class PDFRepository(IPDFRepository):
                 ":act_year, :long_title, :regional_title, :notification_no, :act_code, :so_reason, "
                 ":no_of_rules, :no_of_notifications, :no_of_regulations, :no_of_circulars, "
                 ":no_of_statutes, :no_of_ordinances, :no_of_orders, :keywords, :is_repealed, "
-                ":last_updated_on"
+                ":last_updated_on, :status"
                 ")"
             ),
             {
@@ -110,6 +111,7 @@ class PDFRepository(IPDFRepository):
                 "keywords": keywords,
                 "is_repealed": is_repealed,
                 "last_updated_on": last_updated_on,
+                "status": status,
             },
         )
         row = result.mappings().fetchone()
@@ -207,7 +209,7 @@ class PDFRepository(IPDFRepository):
 
     def resubmit_document(self, document_id: int) -> None:
         self._db.execute(
-            text("UPDATE pdf_documents SET status='pending' WHERE id=:id AND status='rejected'"),
+            text("UPDATE pdf_documents SET status='pending' WHERE id=:id AND status IN ('rejected','draft')"),
             {"id": document_id},
         )
         self._db.execute(
