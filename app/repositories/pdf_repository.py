@@ -299,6 +299,14 @@ class PDFRepository(IPDFRepository):
         )
         self._db.commit()
 
+    def get_department_report(self, report_date: str) -> list[dict]:
+        result = self._db.execute(
+            text("CALL sp_department_report(:report_date)"),
+            {"report_date": report_date},
+        )
+        rows = result.mappings().fetchall()
+        return [dict(row) for row in rows]
+
     def get_linked_documents_for_department(self, department_id: int, status: str | None = None) -> list[dict]:
         result = self._db.execute(
             text("CALL sp_get_linked_documents_for_department(:department_id, :status)"),

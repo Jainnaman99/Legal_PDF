@@ -115,6 +115,10 @@ class IPDFRepository(ABC):
         ...
 
     @abstractmethod
+    def get_department_report(self, report_date: str) -> list[dict]:
+        ...
+
+    @abstractmethod
     def get_linked_documents_for_department(self, department_id: int, status: str | None = None) -> list[dict]:
         ...
 

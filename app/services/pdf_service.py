@@ -242,6 +242,9 @@ class PDFService:
     def list_all_documents(self, skip: int = 0, limit: int = 100, status: Optional[str] = None, approver_id: Optional[int] = None) -> tuple[int, list[PDFDocument]]:
         return self._pdf_repo.list_all(skip, limit, status, approver_id=approver_id)
 
+    def get_department_report(self, report_date: str) -> list[dict]:
+        return self._pdf_repo.get_department_report(report_date)
+
     def check_duplicate_document(self, document_name: str, document_type_id: int, caller_dept_id: int) -> list[dict]:
         return self._pdf_repo.check_duplicate(document_name, document_type_id, caller_dept_id)
 

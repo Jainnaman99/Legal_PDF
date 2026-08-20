@@ -841,3 +841,24 @@ def get_act_full_detail(
         related_documents=related_documents,
         act_parts=act_parts,
     )
+
+
+_super_admin = require_roles("super Admin")
+
+
+@router.get(
+    "/report/daily",
+    summary="Super Admin — department-wise daily activity report",
+)
+def get_daily_department_report(
+    report_date: str = Query(..., description="Date in YYYY-MM-DD format"),
+    current_user: User = Depends(_super_admin),
+    service: PDFService = Depends(get_pdf_service),
+):
+    from datetime import date as _date
+    try:
+        _date.fromisoformat(report_date)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+    rows = service.get_department_report(report_date)
+    return {"report_date": report_date, "rows": rows}
