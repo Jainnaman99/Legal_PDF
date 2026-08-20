@@ -59,16 +59,20 @@ class SmsService:
         }
         if template_id:
             payload["templateid"] = template_id
+        masked = mobile[:2] + "X" * (len(mobile) - 4) + mobile[-2:]
         try:
-            logger.debug("[SmsService] BSNL request to %s — username=%s senderid=%s entityid=%s mobile=%s",
-                         BSNL_URL, payload["username"], payload["senderid"], payload["entityid"], mobile)
+            logger.debug("[SmsService] BSNL request — username=%s senderid=%s entityid=%s mobile=%s",
+                         payload["username"], payload["senderid"], payload["entityid"], masked)
             resp = httpx.post(BSNL_URL, data=payload, timeout=10)
             resp_text = resp.text.strip()
+            # Strip MsgID and phone number from BSNL response before logging/returning
+            # e.g. "402, MsgID = 432355...,7009343235" → "402"
+            safe_resp = resp_text.split(",")[0].strip() if resp_text.startswith("402") else resp_text
             if resp_text.startswith("402"):
-                logger.info("[SmsService] BSNL SMS sent to %s: %s", mobile, resp_text)
+                logger.info("[SmsService] BSNL SMS sent to %s: %s", masked, safe_resp)
             else:
-                logger.error("[SmsService] BSNL SMS failed to %s: %s", mobile, resp_text)
-            return resp_text
+                logger.error("[SmsService] BSNL SMS failed to %s: %s", masked, resp_text)
+            return safe_resp
         except Exception as exc:
-            logger.error("[SmsService] BSNL SMS exception for %s: %s", mobile, exc)
+            logger.error("[SmsService] BSNL SMS exception for %s: %s", masked, exc)
             return f"Exception: {exc}"

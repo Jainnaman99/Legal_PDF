@@ -40,12 +40,7 @@ def request_admin_otp(
             detail="Could not send OTP. Please try again later.",
         )
     audit.log("admin_otp_requested", "auth", details={"mobile": body.mobile_number}, ip_address=ip)
-    return {
-        "message": "OTP generated. Valid for 10 minutes.",
-        "sms_response": sms_response,
-        # TODO: remove once real SMS delivery is confirmed in production
-        "otp": otp,
-    }
+    return {"message": "OTP generated. Valid for 10 minutes.", "sms_response": sms_response}
 
 
 @router.post("/verify-otp", status_code=status.HTTP_200_OK)
