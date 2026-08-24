@@ -242,6 +242,9 @@ class PDFService:
     def list_all_documents(self, skip: int = 0, limit: int = 100, status: Optional[str] = None, approver_id: Optional[int] = None) -> tuple[int, list[PDFDocument]]:
         return self._pdf_repo.list_all(skip, limit, status, approver_id=approver_id)
 
+    def get_approved_pdf_ids(self) -> set[int]:
+        return self._pdf_repo.get_approved_ids()
+
     def get_department_report(self, report_date: str) -> list[dict]:
         return self._pdf_repo.get_department_report(report_date)
 

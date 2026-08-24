@@ -299,6 +299,12 @@ class PDFRepository(IPDFRepository):
         )
         self._db.commit()
 
+    def get_approved_ids(self) -> set[int]:
+        result = self._db.execute(
+            text("SELECT id FROM pdf_documents WHERE status = 'approved'")
+        )
+        return {row[0] for row in result.fetchall()}
+
     def get_department_report(self, report_date: str) -> list[dict]:
         result = self._db.execute(
             text("CALL sp_department_report(:report_date)"),

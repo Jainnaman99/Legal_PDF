@@ -15,16 +15,24 @@ class RAGService:
     def __init__(self, vector_store: "VectorStoreService | None"):
         self._vs = vector_store
 
-    def answer(self, question: str, top_k: int = 5) -> dict:
+    def answer(self, question: str, top_k: int = 5,
+               approved_pdf_ids: "set[int] | None" = None) -> dict:
         if self._vs is None:
             return {
                 "answer": "Semantic search is temporarily unavailable (vector store not initialized).",
                 "sources": [],
             }
-        chunks = self._vs.search(question, top_k)
+        # Fetch extra chunks so we still have top_k after filtering out unapproved docs
+        fetch_k = top_k * 3 if approved_pdf_ids is not None else top_k
+        chunks = self._vs.search(question, fetch_k)
+
+        if approved_pdf_ids is not None:
+            chunks = [c for c in chunks if int(c["metadata"]["pdf_id"]) in approved_pdf_ids]
+        chunks = chunks[:top_k]
+
         if not chunks:
             return {
-                "answer": "No relevant documents found in the database for your question.",
+                "answer": "No relevant approved documents found for your question.",
                 "sources": [],
             }
 

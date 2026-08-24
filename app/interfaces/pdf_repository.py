@@ -119,6 +119,10 @@ class IPDFRepository(ABC):
         ...
 
     @abstractmethod
+    def get_approved_ids(self) -> set[int]:
+        ...
+
+    @abstractmethod
     def get_linked_documents_for_department(self, department_id: int, status: str | None = None) -> list[dict]:
         ...
 

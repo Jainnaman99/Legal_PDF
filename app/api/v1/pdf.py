@@ -430,8 +430,10 @@ def semantic_search(
     q: str = Query(..., min_length=5, description="Natural language question"),
     top_k: int = Query(5, ge=1, le=10),
     rag: RAGService = Depends(get_rag_service),
+    service: PDFService = Depends(get_pdf_service),
 ):
-    result = rag.answer(q, top_k)
+    approved_ids = service.get_approved_pdf_ids()
+    result = rag.answer(q, top_k, approved_pdf_ids=approved_ids)
     base = str(request.base_url).rstrip("/")
     for source in result["sources"]:
         source["file_url"] = f"{base}/api/v1/pdf/{source['pdf_id']}/file"
