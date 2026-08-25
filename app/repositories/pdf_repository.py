@@ -251,14 +251,20 @@ class PDFRepository(IPDFRepository):
         }
         return total, [self._map_row(row) for row in rows], counts
 
-    def list_all(self, skip: int = 0, limit: int = 100, status: Optional[str] = None, approver_id: Optional[int] = None) -> tuple[int, list[PDFDocument]]:
+    def list_all(self, skip: int = 0, limit: int = 100, status: Optional[str] = None, approver_id: Optional[int] = None) -> tuple[int, list[PDFDocument], dict]:
         result = self._db.execute(
             text("CALL sp_list_all_pdfs(:skip, :limit, :status, :approver_id)"),
             {"skip": skip, "limit": limit, "status": status, "approver_id": approver_id},
         )
         rows = result.mappings().fetchall()
         total = rows[0]["total_count"] if rows else 0
-        return total, [self._map_row(row) for row in rows]
+        counts = {
+            "count_total":    int(rows[0]["count_total"])    if rows else 0,
+            "count_pending":  int(rows[0]["count_pending"])  if rows else 0,
+            "count_approved": int(rows[0]["count_approved"]) if rows else 0,
+            "count_rejected": int(rows[0]["count_rejected"]) if rows else 0,
+        }
+        return total, [self._map_row(row) for row in rows], counts
 
     def get_pending(self, skip: int = 0, limit: int = 100, approver_id=None) -> tuple[int, list[PDFDocument]]:
         result = self._db.execute(

@@ -239,7 +239,7 @@ class PDFService:
     def list_my_documents(self, user_id: int, skip: int = 0, limit: int = 100, status: Optional[str] = None) -> tuple[int, list[PDFDocument], dict]:
         return self._pdf_repo.list_by_user(user_id, skip, limit, status)
 
-    def list_all_documents(self, skip: int = 0, limit: int = 100, status: Optional[str] = None, approver_id: Optional[int] = None) -> tuple[int, list[PDFDocument]]:
+    def list_all_documents(self, skip: int = 0, limit: int = 100, status: Optional[str] = None, approver_id: Optional[int] = None) -> tuple[int, list[PDFDocument], dict]:
         return self._pdf_repo.list_all(skip, limit, status, approver_id=approver_id)
 
     def get_approved_pdf_ids(self) -> set[int]:

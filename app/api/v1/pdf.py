@@ -253,8 +253,8 @@ def list_documents_for_approver(
         )
     role_name = current_user.role.name if current_user.role else ""
     approver_filter = current_user.id if role_name == "approver" else None
-    total, documents = service.list_all_documents(skip, limit, status, approver_id=approver_filter)
-    return PDFListResponse(total=total, documents=documents)
+    total, documents, counts = service.list_all_documents(skip, limit, status, approver_id=approver_filter)
+    return PDFListResponse(total=total, documents=documents, **counts)
 
 
 VALID_DOCUMENT_TYPES = {"Act", "Amendment", "Notification", "Circular", "Policy", "Rules & Regulations", "Order/Gazette"}
