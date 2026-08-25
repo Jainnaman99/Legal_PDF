@@ -465,8 +465,8 @@ def list_all_documents(
             status_code=400,
             detail="status must be one of: pending, approved, rejected",
         )
-    total, documents = service.list_all_documents(skip, limit, status)
-    return PDFListResponse(total=total, documents=documents)
+    total, documents, counts = service.list_all_documents(skip, limit, status)
+    return PDFListResponse(total=total, documents=documents, **counts)
 
 
 @router.get(
