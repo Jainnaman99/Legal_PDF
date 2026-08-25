@@ -2,8 +2,10 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
 
-from app.core.dependencies import get_pdf_service
+from app.core.dependencies import get_department_service, get_pdf_service
+from app.schemas.auth import DepartmentOut
 from app.schemas.pdf import PDFListResponse, PDFListItem
+from app.services.department_service import DepartmentService
 from app.services.pdf_service import PDFService
 
 router = APIRouter(prefix="/citizen", tags=["Citizen Portal"])
@@ -26,3 +28,14 @@ def list_approved_documents(
         total=total,
         documents=[PDFListItem.model_validate(d) for d in docs],
     )
+
+
+@router.get(
+    "/departments",
+    response_model=list[DepartmentOut],
+    summary="List all active departments — no token required",
+)
+def list_departments_public(
+    service: DepartmentService = Depends(get_department_service),
+):
+    return service.list_all(skip=0, limit=500)
