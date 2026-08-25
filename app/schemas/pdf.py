@@ -276,6 +276,11 @@ class PDFListItem(BaseModel):
 class PDFListResponse(BaseModel):
     total: int
     documents: list[PDFListItem]
+    count_total: Optional[int] = None
+    count_pending: Optional[int] = None
+    count_approved: Optional[int] = None
+    count_rejected: Optional[int] = None
+    count_draft: Optional[int] = None
 
 
 # ── Department linking ────────────────────────────────────────

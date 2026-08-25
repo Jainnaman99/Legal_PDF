@@ -235,14 +235,21 @@ class PDFRepository(IPDFRepository):
         row = result.mappings().fetchone()
         return self._map_row(row) if row else None
 
-    def list_by_user(self, user_id: int, skip: int = 0, limit: int = 100) -> tuple[int, list[PDFDocument]]:
+    def list_by_user(self, user_id: int, skip: int = 0, limit: int = 100, status: Optional[str] = None) -> tuple[int, list[PDFDocument], dict]:
         result = self._db.execute(
-            text("CALL sp_list_pdfs_by_user(:user_id, :skip, :limit)"),
-            {"user_id": user_id, "skip": skip, "limit": limit},
+            text("CALL sp_list_pdfs_by_user(:user_id, :skip, :limit, :status)"),
+            {"user_id": user_id, "skip": skip, "limit": limit, "status": status},
         )
         rows = result.mappings().fetchall()
         total = rows[0]["total_count"] if rows else 0
-        return total, [self._map_row(row) for row in rows]
+        counts = {
+            "count_total":    int(rows[0]["count_total"])    if rows else 0,
+            "count_pending":  int(rows[0]["count_pending"])  if rows else 0,
+            "count_approved": int(rows[0]["count_approved"]) if rows else 0,
+            "count_rejected": int(rows[0]["count_rejected"]) if rows else 0,
+            "count_draft":    int(rows[0]["count_draft"])    if rows else 0,
+        }
+        return total, [self._map_row(row) for row in rows], counts
 
     def list_all(self, skip: int = 0, limit: int = 100, status: Optional[str] = None, approver_id: Optional[int] = None) -> tuple[int, list[PDFDocument]]:
         result = self._db.execute(

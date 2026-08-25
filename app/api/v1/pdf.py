@@ -311,12 +311,13 @@ def search_pdfs(
 @router.get("/my-documents", response_model=PDFListResponse)
 def list_my_documents(
     skip: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100),
+    limit: int = Query(500, ge=1, le=1000),
+    status: Optional[str] = Query(None, description="Filter by status: pending | approved | rejected | draft"),
     current_user: User = Depends(get_current_user),
     service: PDFService = Depends(get_pdf_service),
 ):
-    total, documents = service.list_my_documents(current_user.id, skip, limit)
-    return PDFListResponse(total=total, documents=documents)
+    total, documents, counts = service.list_my_documents(current_user.id, skip, limit, status)
+    return PDFListResponse(total=total, documents=documents, **counts)
 
 
 _VALID_DOC_TYPES = {"Act", "Amendment", "Notification", "Circular", "Policy", "Rules & Regulations", "Order/Gazette"}
