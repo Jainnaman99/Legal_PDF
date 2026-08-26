@@ -1,10 +1,12 @@
+from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
 from app.core.dependencies import get_audit_service, get_current_user, get_department_service, get_dept_role_limit_repository, get_user_repository, require_roles
 from app.interfaces.dept_role_limit_repository import IDeptRoleLimitRepository
 from app.interfaces.user_repository import IUserRepository
 from app.models.user import User
-from app.schemas.auth import DepartmentOut, UserOut, UserUpdate
+from app.schemas.auth import DepartmentOut, UserListResponse, UserOut, UserUpdate
 from app.services.audit_service import AuditService
 from app.services.department_service import DepartmentService
 from app.utils.request_utils import get_client_ip
@@ -36,19 +38,46 @@ def _assert_in_managed_departments(current_user: User, target: User) -> None:
             )
 
 
-@router.get("/", response_model=list[UserOut])
+@router.get("/", response_model=UserListResponse)
 def list_users(
     skip: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100),
+    limit: int = Query(10, ge=1, le=1000),
+    status: Optional[str] = Query(None, description="Filter by status: active | inactive"),
+    department_id: Optional[int] = Query(None, description="Filter by department ID"),
     current_user: User = Depends(_manage_users),
     repo: IUserRepository = Depends(get_user_repository),
 ):
-    dept_filter: str | None = None
-    if _is_nodal_officer(current_user):
-        departments = getattr(current_user, "departments", [])
-        dept_filter = ",".join(str(d.id) for d in departments)
+    is_active: int | None = None
+    if status == "active":
+        is_active = 1
+    elif status == "inactive":
+        is_active = 0
 
-    return repo.list_all(skip, limit, exclude_user_id=current_user.id, department_ids=dept_filter)
+    role_name = current_user.role.name if current_user.role else ""
+
+    if role_name in ("nodal Officer", "admin"):
+        caller_dept_ids = {d.id for d in getattr(current_user, "departments", [])}
+        # If a specific dept is requested and it's within the caller's scope, use it;
+        # otherwise fall back to the caller's full set of departments.
+        if department_id and department_id in caller_dept_ids:
+            dept_csv = str(department_id)
+        else:
+            dept_csv = ",".join(str(i) for i in caller_dept_ids) or None
+        if role_name == "nodal Officer":
+            users, counts = repo.list_for_nodal(skip, limit, current_user.id, dept_csv, is_active)
+        else:
+            users, counts = repo.list_for_admin(skip, limit, current_user.id, dept_csv, is_active)
+    else:  # super Admin
+        dept_csv = str(department_id) if department_id else None
+        users, counts = repo.list_all(skip, limit, exclude_user_id=current_user.id, department_ids=dept_csv, is_active=is_active)
+
+    return UserListResponse(
+        total=counts["total"],
+        count_active=counts["count_active"],
+        count_inactive=counts["count_inactive"],
+        pagination_total=counts["pagination_total"],
+        users=users,
+    )
 
 
 @router.get("/approvers", response_model=list[UserOut])
@@ -73,6 +102,10 @@ def get_my_departments(
     """
     if _is_nodal_officer(current_user):
         return getattr(current_user, "departments", [])
+    role_name = current_user.role.name if current_user.role else ""
+    if role_name == "admin":
+        admin_depts = getattr(current_user, "departments", [])
+        return admin_depts if admin_depts else dept_service.list_all(0, 200)
     return dept_service.list_all(0, 200)
 
 

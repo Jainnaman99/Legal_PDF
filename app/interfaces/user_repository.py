@@ -63,7 +63,30 @@ class IUserRepository(ABC):
         limit: int = 100,
         exclude_user_id: Optional[int] = None,
         department_ids: Optional[str] = None,
-    ) -> list[User]:
+        is_active: Optional[int] = None,
+    ) -> tuple[list[User], dict]:
+        ...
+
+    @abstractmethod
+    def list_for_admin(
+        self,
+        skip: int = 0,
+        limit: int = 10,
+        exclude_user_id: Optional[int] = None,
+        department_ids: Optional[str] = None,
+        is_active: Optional[int] = None,
+    ) -> tuple[list[User], dict]:
+        ...
+
+    @abstractmethod
+    def list_for_nodal(
+        self,
+        skip: int = 0,
+        limit: int = 10,
+        exclude_user_id: Optional[int] = None,
+        department_ids: Optional[str] = None,
+        is_active: Optional[int] = None,
+    ) -> tuple[list[User], dict]:
         ...
 
     @abstractmethod

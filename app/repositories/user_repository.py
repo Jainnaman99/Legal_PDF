@@ -155,18 +155,28 @@ class UserRepository(IUserRepository):
                 raise ValueError("Email is already registered")
             raise ValueError("Update failed due to a conflict")
 
-    def list_all(
+    def _list_scoped(
         self,
-        skip: int = 0,
-        limit: int = 100,
-        exclude_user_id: Optional[int] = None,
-        department_ids: Optional[str] = None,
-    ) -> list[User]:
+        sp_name: str,
+        skip: int,
+        limit: int,
+        exclude_user_id: Optional[int],
+        department_ids: Optional[str],
+        is_active: Optional[int],
+    ) -> tuple[list[User], dict]:
         result = self._db.execute(
-            text("CALL sp_list_users(:skip, :limit, :exclude_user_id, :department_ids)"),
-            {"skip": skip, "limit": limit, "exclude_user_id": exclude_user_id, "department_ids": department_ids},
+            text(f"CALL {sp_name}(:skip, :limit, :exclude_user_id, :department_ids, :is_active)"),
+            {"skip": skip, "limit": limit, "exclude_user_id": exclude_user_id,
+             "department_ids": department_ids, "is_active": is_active},
         )
-        users = [self._map_row(row) for row in result.mappings().fetchall()]
+        rows = result.mappings().fetchall()
+        counts = {
+            "total":            int(rows[0]["count_total"])    if rows else 0,
+            "count_active":     int(rows[0]["count_active"])   if rows else 0,
+            "count_inactive":   int(rows[0]["count_inactive"]) if rows else 0,
+            "pagination_total": int(rows[0]["total_count"])    if rows else 0,
+        }
+        users = [self._map_row(row) for row in rows]
         if users:
             id_csv = ",".join(str(u.id) for u in users)
             approver_rows = self._db.execute(
@@ -179,7 +189,37 @@ class UserRepository(IUserRepository):
                     u.approver_id = row["approver_id"]
                     if not u.mobile_number:
                         u.mobile_number = row["mobile_number"]
-        return users
+        return users, counts
+
+    def list_all(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        exclude_user_id: Optional[int] = None,
+        department_ids: Optional[str] = None,
+        is_active: Optional[int] = None,
+    ) -> tuple[list[User], dict]:
+        return self._list_scoped("sp_list_users", skip, limit, exclude_user_id, department_ids, is_active)
+
+    def list_for_admin(
+        self,
+        skip: int = 0,
+        limit: int = 10,
+        exclude_user_id: Optional[int] = None,
+        department_ids: Optional[str] = None,
+        is_active: Optional[int] = None,
+    ) -> tuple[list[User], dict]:
+        return self._list_scoped("sp_list_users_admin", skip, limit, exclude_user_id, department_ids, is_active)
+
+    def list_for_nodal(
+        self,
+        skip: int = 0,
+        limit: int = 10,
+        exclude_user_id: Optional[int] = None,
+        department_ids: Optional[str] = None,
+        is_active: Optional[int] = None,
+    ) -> tuple[list[User], dict]:
+        return self._list_scoped("sp_list_users_nodal", skip, limit, exclude_user_id, department_ids, is_active)
 
     def change_password(self, user_id: int, hashed_password: str) -> None:
         self._db.execute(

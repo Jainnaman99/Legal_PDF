@@ -50,6 +50,14 @@ class UserOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class UserListResponse(BaseModel):
+    total: int              # global user count (for stat cards)
+    count_active: int       # global active count (for stat cards)
+    count_inactive: int     # global inactive count (for stat cards)
+    pagination_total: int   # count matching current status filter (for pagination)
+    users: list[UserOut]
+
+
 class ChangePasswordRequest(BaseModel):
     current_password: str
     new_password: str
