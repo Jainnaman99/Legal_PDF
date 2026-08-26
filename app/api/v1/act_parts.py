@@ -55,7 +55,6 @@ _MIME = {
 )
 def serve_file(
     file_ref: str,
-    current_user: User = Depends(get_current_user),
 ):
     # Reject path traversal: file_ref must be a plain filename, no directory components.
     # Normalise Windows separators first so the check works on any host OS.
