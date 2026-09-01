@@ -151,6 +151,10 @@ class IPDFRepository(ABC):
         ...
 
     @abstractmethod
+    def citizen_recent_documents(self, limit: int = 5) -> list[PDFDocument]:
+        ...
+
+    @abstractmethod
     def citizen_list_documents(self, department_id: Optional[int], document_type_id: Optional[int], skip: int, limit: int) -> tuple[int, list[PDFDocument]]:
         ...
 

@@ -283,6 +283,9 @@ class PDFService:
     def citizen_search(self, document_type_id: Optional[int], name_prefix: Optional[str], skip: int, limit: int) -> tuple[int, list]:
         return self._pdf_repo.citizen_search(document_type_id, name_prefix, skip, limit)
 
+    def citizen_recent_documents(self, limit: int = 5) -> list:
+        return self._pdf_repo.citizen_recent_documents(limit)
+
     def citizen_list_documents(self, department_id: Optional[int], document_type_id: Optional[int], skip: int, limit: int) -> tuple[int, list]:
         return self._pdf_repo.citizen_list_documents(department_id, document_type_id, skip, limit)
 

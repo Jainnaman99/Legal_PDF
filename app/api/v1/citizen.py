@@ -12,6 +12,18 @@ router = APIRouter(prefix="/citizen", tags=["Citizen Portal"])
 
 
 @router.get(
+    "/recent-documents",
+    response_model=list[PDFListItem],
+    summary="Top 5 recently approved documents — no token required",
+)
+def recent_documents(
+    service: PDFService = Depends(get_pdf_service),
+):
+    docs = service.citizen_recent_documents(limit=5)
+    return [PDFListItem.model_validate(d) for d in docs]
+
+
+@router.get(
     "/documents",
     response_model=PDFListResponse,
     summary="List approved documents — no token required",

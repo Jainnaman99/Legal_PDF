@@ -349,6 +349,14 @@ class PDFRepository(IPDFRepository):
         total = rows[0]["total_count"] if rows else 0
         return total, [self._map_row(row) for row in rows]
 
+    def citizen_recent_documents(self, limit: int = 5) -> list[PDFDocument]:
+        result = self._db.execute(
+            text("CALL sp_citizen_recent_documents(:limit)"),
+            {"limit": limit},
+        )
+        rows = result.mappings().fetchall()
+        return [self._map_row(row) for row in rows]
+
     def citizen_list_documents(self, department_id: Optional[int] = None, document_type_id: Optional[int] = None, skip: int = 0, limit: int = 20) -> tuple[int, list[PDFDocument]]:
         result = self._db.execute(
             text("CALL sp_citizen_list_documents(:department_id, :document_type_id, :skip, :limit)"),
