@@ -361,6 +361,26 @@ def list_docs_by_my_department_and_type(
     return PDFListResponse(total=total, documents=documents)
 
 
+@router.get(
+    "/my-department/all",
+    response_model=PDFListResponse,
+    summary="Nodal — list all documents (any type) uploaded in the current user's department(s)",
+)
+def list_all_docs_by_my_department(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=1000),
+    status: Optional[str] = Query(None, description="Filter by status: pending | approved | rejected"),
+    current_user: User = Depends(get_current_user),
+    service: PDFService = Depends(get_pdf_service),
+):
+    if not current_user.department_id:
+        raise HTTPException(status_code=400, detail="Your account has no department assigned")
+    if status and status not in _VALID_STATUSES:
+        raise HTTPException(status_code=400, detail="status must be one of: pending, approved, rejected")
+    total, documents, counts = service.list_by_department(current_user.department_id, skip, limit, status)
+    return PDFListResponse(total=total, documents=documents, **counts)
+
+
 @router.put("/{document_id}", response_model=PDFUploadResponse, summary="Update document metadata")
 def update_document(
     document_id: int,

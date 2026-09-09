@@ -384,6 +384,21 @@ class PDFRepository(IPDFRepository):
         total = rows[0]["total_count"] if rows else 0
         return total, [self._map_row(row) for row in rows]
 
+    def list_by_department(self, dept_ids: str, skip: int = 0, limit: int = 100, status: Optional[str] = None) -> tuple[int, list[PDFDocument], dict]:
+        result = self._db.execute(
+            text("CALL sp_list_pdfs_by_department(:dept_ids, :skip, :limit, :status)"),
+            {"dept_ids": dept_ids, "skip": skip, "limit": limit, "status": status},
+        )
+        rows = result.mappings().fetchall()
+        total = rows[0]["total_count"] if rows else 0
+        counts = {
+            "count_total":    int(rows[0]["count_total"])    if rows else 0,
+            "count_pending":  int(rows[0]["count_pending"])  if rows else 0,
+            "count_approved": int(rows[0]["count_approved"]) if rows else 0,
+            "count_rejected": int(rows[0]["count_rejected"]) if rows else 0,
+        }
+        return total, [self._map_row(row) for row in rows], counts
+
     def get_documents_under_act(self, act_id: int) -> list[dict]:
         result = self._db.execute(
             text("CALL sp_get_documents_under_act(:act_id)"),
