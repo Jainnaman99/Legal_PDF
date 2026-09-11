@@ -19,7 +19,7 @@ from app.models.user import User
 
 router = APIRouter(prefix="/cap-requests", tags=["Cap Change Requests"])
 
-_admin_only      = require_roles("admin")
+_requester_roles = require_roles("admin", "nodal Officer")
 _super_admin     = require_roles("super Admin")
 
 _ALLOWED_ATTACHMENT_TYPES = {
@@ -53,7 +53,7 @@ def submit_cap_request(
     requested_cap: int = Form(..., ge=0),
     reason: Optional[str] = Form(None),
     file: UploadFile = File(..., description="Mandatory supporting document (approval memo, justification, etc.)"),
-    current_user: User = Depends(_admin_only),
+    current_user: User = Depends(_requester_roles),
     repo: ICapRequestRepository = Depends(get_cap_request_repository),
     limit_repo: IDeptRoleLimitRepository = Depends(get_dept_role_limit_repository),
 ):
@@ -102,7 +102,7 @@ def submit_cap_request(
 @router.get("/my-requests")
 def list_my_requests(
     request: Request,
-    current_user: User = Depends(_admin_only),
+    current_user: User = Depends(_requester_roles),
     repo: ICapRequestRepository = Depends(get_cap_request_repository),
 ):
     dept_id = current_user.department_id
@@ -134,12 +134,12 @@ def get_cap_request_attachment(
     role_name = current_user.role.name if current_user.role else ""
     if role_name == "super Admin":
         pass
-    elif role_name == "admin":
+    elif role_name in ("admin", "nodal Officer"):
         try:
-            admin_dept_id = int(str(current_user.department_id).split(",")[0].strip())
+            requester_dept_ids = {int(d.strip()) for d in str(current_user.department_id).split(",") if d.strip()}
         except (ValueError, AttributeError):
-            admin_dept_id = None
-        if admin_dept_id != cap_req["department_id"]:
+            requester_dept_ids = set()
+        if cap_req["department_id"] not in requester_dept_ids:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view this attachment.")
     else:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view this attachment.")

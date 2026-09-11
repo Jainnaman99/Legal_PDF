@@ -19,7 +19,7 @@ class UpsertLimitRequest(BaseModel):
 @router.get("")
 def list_limits(
     repo: IDeptRoleLimitRepository = Depends(get_dept_role_limit_repository),
-    _: User = Depends(require_roles("admin", "super Admin")),
+    _: User = Depends(require_roles("admin", "super Admin", "nodal Officer")),
 ):
     return {"default_max": DEFAULT_MAX, "limits": repo.list_all()}
 
