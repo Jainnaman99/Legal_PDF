@@ -21,7 +21,10 @@ _SELECT_COLS = """
     cr.super_admin_note,
     cr.resolved_by,
     cr.resolved_at,
-    cr.created_at
+    cr.created_at,
+    cr.attachment_file_path,
+    cr.attachment_original_filename,
+    cr.attachment_file_size
 """
 
 _FROM_JOINS = """
@@ -45,16 +48,24 @@ class CapRequestRepository(ICapRequestRepository):
         current_cap: Optional[int],
         requested_cap: int,
         reason: Optional[str],
+        attachment_filename: str,
+        attachment_original_filename: str,
+        attachment_file_path: str,
+        attachment_file_size: int,
     ) -> dict:
         result = self._db.execute(
             text("""
                 INSERT INTO cap_change_requests
-                    (department_id, role_id, requested_by, current_cap, requested_cap, reason)
+                    (department_id, role_id, requested_by, current_cap, requested_cap, reason,
+                     attachment_filename, attachment_original_filename, attachment_file_path, attachment_file_size)
                 VALUES
-                    (:dept, :role, :by, :cur, :req, :rsn)
+                    (:dept, :role, :by, :cur, :req, :rsn,
+                     :att_fn, :att_orig, :att_path, :att_size)
             """),
             {"dept": department_id, "role": role_id, "by": requested_by,
-             "cur": current_cap, "req": requested_cap, "rsn": reason},
+             "cur": current_cap, "req": requested_cap, "rsn": reason,
+             "att_fn": attachment_filename, "att_orig": attachment_original_filename,
+             "att_path": attachment_file_path, "att_size": attachment_file_size},
         )
         self._db.commit()
         new_id = result.lastrowid

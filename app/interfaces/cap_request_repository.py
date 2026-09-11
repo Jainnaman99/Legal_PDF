@@ -13,6 +13,10 @@ class ICapRequestRepository(ABC):
         current_cap: Optional[int],
         requested_cap: int,
         reason: Optional[str],
+        attachment_filename: str,
+        attachment_original_filename: str,
+        attachment_file_path: str,
+        attachment_file_size: int,
     ) -> dict:
         """Insert a new cap-change request and return it as a dict."""
         ...
