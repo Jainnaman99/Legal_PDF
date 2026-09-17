@@ -242,6 +242,24 @@ class PDFService:
     def list_all_documents(self, skip: int = 0, limit: int = 100, status: Optional[str] = None, approver_id: Optional[int] = None) -> tuple[int, list[PDFDocument], dict]:
         return self._pdf_repo.list_all(skip, limit, status, approver_id=approver_id)
 
+    def list_all_documents_super_admin(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        status: Optional[str] = None,
+        department_id: Optional[int] = None,
+        uploader_id: Optional[int] = None,
+        approver_id: Optional[int] = None,
+        document_name_starts_with: Optional[str] = None,
+    ) -> tuple[int, list[PDFDocument], dict]:
+        return self._pdf_repo.list_all_super_admin(
+            skip, limit, status,
+            department_id=department_id,
+            uploader_id=uploader_id,
+            approver_id=approver_id,
+            document_name_starts_with=document_name_starts_with,
+        )
+
     def get_approved_pdf_ids(self) -> set[int]:
         return self._pdf_repo.get_approved_ids()
 

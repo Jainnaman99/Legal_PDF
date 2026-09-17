@@ -87,6 +87,19 @@ class IPDFRepository(ABC):
         ...
 
     @abstractmethod
+    def list_all_super_admin(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        status: Optional[str] = None,
+        department_id: Optional[int] = None,
+        uploader_id: Optional[int] = None,
+        approver_id: Optional[int] = None,
+        document_name_starts_with: Optional[str] = None,
+    ) -> tuple[int, list[PDFDocument], dict]:
+        ...
+
+    @abstractmethod
     def get_pending(self, skip: int = 0, limit: int = 100, approver_id: Optional[int] = None) -> tuple[int, list[PDFDocument]]:
         ...
 

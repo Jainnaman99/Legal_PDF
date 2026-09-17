@@ -31,6 +31,16 @@ class DepartmentOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class UserFilterOption(BaseModel):
+    """Minimal user shape for populating filter dropdowns (e.g. Uploader/Approver on the Super Admin Uploads screen)."""
+    id: int
+    username: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
 class UserOut(BaseModel):
     id: int
     username: str

@@ -235,6 +235,13 @@ class UserRepository(IUserRepository):
         )
         return [self._map_row(row) for row in result.mappings().fetchall()]
 
+    def list_active_by_role(self, role_name: str, department_id: Optional[int] = None) -> list[dict]:
+        result = self._db.execute(
+            text("CALL sp_list_active_users_by_role(:role_name, :department_id)"),
+            {"role_name": role_name, "department_id": department_id},
+        )
+        return [dict(row) for row in result.mappings().fetchall()]
+
     def set_mobile_verified(self, user_id: int, verified: bool) -> None:
         self._db.execute(
             text("CALL sp_set_mobile_verified(:user_id, :verified)"),

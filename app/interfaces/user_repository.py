@@ -42,6 +42,10 @@ class IUserRepository(ABC):
         ...
 
     @abstractmethod
+    def list_active_by_role(self, role_name: str, department_id: Optional[int] = None) -> list[dict]:
+        ...
+
+    @abstractmethod
     def update(
         self,
         user_id: int,

@@ -49,6 +49,7 @@ ALLOWED_CONTENT_TYPES = {
 }
 
 _approver_roles = require_roles("approver", "admin", "super Admin")
+_super_admin = require_roles("super Admin")
 
 
 @router.post(
@@ -490,6 +491,37 @@ def list_all_documents(
 
 
 @router.get(
+    "/super-admin/all",
+    response_model=PDFListResponse,
+    summary="Super Admin — all documents system-wide, with server-side filters",
+)
+def list_all_documents_super_admin(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=1000),
+    status: Optional[str] = Query(None, description="Filter by status: pending | approved | rejected"),
+    department_id: Optional[int] = Query(None, description="Exact match against department id (the dropdown's value)"),
+    uploader_id: Optional[int] = Query(None, description="Exact match against uploader user id (the dropdown's value)"),
+    approver_id: Optional[int] = Query(None, description="Exact match against the latest approver's user id (the dropdown's value)"),
+    document_name_starts_with: Optional[str] = Query(None, description="Prefix match against document name"),
+    current_user: User = Depends(_super_admin),
+    service: PDFService = Depends(get_pdf_service),
+):
+    if status and status not in ("pending", "approved", "rejected"):
+        raise HTTPException(
+            status_code=400,
+            detail="status must be one of: pending, approved, rejected",
+        )
+    total, documents, counts = service.list_all_documents_super_admin(
+        skip, limit, status,
+        department_id=department_id,
+        uploader_id=uploader_id,
+        approver_id=approver_id,
+        document_name_starts_with=document_name_starts_with,
+    )
+    return PDFListResponse(total=total, documents=documents, **counts)
+
+
+@router.get(
     "/check-duplicate",
     response_model=list[DuplicateCheckItem],
     summary="Check if a document with the same name and type already exists in another department",
@@ -864,9 +896,6 @@ def get_act_full_detail(
         related_documents=related_documents,
         act_parts=act_parts,
     )
-
-
-_super_admin = require_roles("super Admin")
 
 
 @router.get(

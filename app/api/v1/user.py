@@ -6,7 +6,7 @@ from app.core.dependencies import get_audit_service, get_current_user, get_depar
 from app.interfaces.dept_role_limit_repository import IDeptRoleLimitRepository
 from app.interfaces.user_repository import IUserRepository
 from app.models.user import User
-from app.schemas.auth import DepartmentOut, UserListResponse, UserOut, UserUpdate
+from app.schemas.auth import DepartmentOut, UserFilterOption, UserListResponse, UserOut, UserUpdate
 from app.services.audit_service import AuditService
 from app.services.department_service import DepartmentService
 from app.utils.request_utils import get_client_ip
@@ -88,6 +88,23 @@ def get_approvers_by_department(
 ):
     """Return active approvers belonging to the given department (used when creating an uploader)."""
     return repo.list_by_role_and_department("approver", department_id)
+
+
+@router.get(
+    "/by-role",
+    response_model=list[UserFilterOption],
+    summary="Active users of a role — populates the Uploader/Approver filter dropdowns",
+)
+def list_active_users_by_role(
+    role: str = Query(..., description="Role name: uploader | approver"),
+    department_id: Optional[int] = Query(None, description="Restrict to this department; omit for every department"),
+    current_user: User = Depends(_manage_users),
+    repo: IUserRepository = Depends(get_user_repository),
+):
+    if role not in ("uploader", "approver"):
+        raise HTTPException(status_code=400, detail="role must be one of: uploader, approver")
+    rows = repo.list_active_by_role(role, department_id)
+    return [UserFilterOption(**row) for row in rows]
 
 
 @router.get("/my-departments", response_model=list[DepartmentOut])
