@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Uplo
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
+from app.api.v1.dept_role_limits import DEFAULT_MAX
 from app.core.config import settings
 from app.core.dependencies import (
     get_cap_request_repository,
@@ -33,7 +34,9 @@ _ALLOWED_ATTACHMENT_TYPES = {
 class CapRequestReview(BaseModel):
     status:           str            # "approved" or "rejected"
     super_admin_note: Optional[str] = None
-    approved_cap:     Optional[int] = None  # super admin can override the requested value on approval
+    # Amount to add to the LIVE current cap at approval time (current_cap + approved_cap).
+    # Defaults to the requester's own requested_cap when the super admin doesn't override it.
+    approved_cap:     Optional[int] = None
 
 
 def _public(item: dict, request: Request) -> dict:
@@ -50,7 +53,7 @@ def _public(item: dict, request: Request) -> dict:
 def submit_cap_request(
     request: Request,
     role_id: int = Form(...),
-    requested_cap: int = Form(..., ge=0),
+    requested_cap: int = Form(..., description="Number of additional users to add to the current cap (negative to request a decrease)"),
     reason: Optional[str] = Form(None),
     file: UploadFile = File(..., description="Mandatory supporting document (approval memo, justification, etc.)"),
     current_user: User = Depends(_requester_roles),
@@ -82,6 +85,13 @@ def submit_cap_request(
         f.write(content)
 
     current_cap = limit_repo.get_limit(dept_id, role_id)
+    base_cap = current_cap if current_cap is not None else DEFAULT_MAX
+    if base_cap + requested_cap < 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Current cap is {base_cap}; this would take it below 0.",
+        )
+
     created = repo.create(
         department_id=dept_id,
         role_id=role_id,
@@ -192,6 +202,29 @@ def review_cap_request(
             detail="Request has already been reviewed.",
         )
 
+    final_cap: Optional[int] = None
+    if body.status == "approved":
+        dept_id = cap_req["department_id"]
+        role_id = cap_req["role_id"]
+        increment = body.approved_cap if body.approved_cap is not None else cap_req["requested_cap"]
+        live_current_cap = limit_repo.get_limit(dept_id, role_id)
+        base_cap = live_current_cap if live_current_cap is not None else DEFAULT_MAX
+        final_cap = base_cap + increment
+
+        # Validate before writing anything — a rejected computation should
+        # leave the request pending, not stuck "approved" with no cap change.
+        if final_cap < 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Current cap is {base_cap}; this would take it below 0.",
+            )
+        active_count = limit_repo.count_active_users(dept_id, role_id)
+        if final_cap < active_count:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"{active_count} user(s) are currently active in this role. Resulting cap ({final_cap}) must be at least {active_count}.",
+            )
+
     updated = repo.review(
         request_id=request_id,
         status=body.status,
@@ -200,11 +233,6 @@ def review_cap_request(
     )
 
     if body.status == "approved":
-        final_cap = body.approved_cap if body.approved_cap is not None else cap_req["requested_cap"]
-        limit_repo.upsert(
-            dept_id=cap_req["department_id"],
-            role_id=cap_req["role_id"],
-            max_users=final_cap,
-        )
+        limit_repo.upsert(dept_id=cap_req["department_id"], role_id=cap_req["role_id"], max_users=final_cap)
 
     return _public(updated, request)

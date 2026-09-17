@@ -39,7 +39,7 @@ def active_user_count(
     dept_id: int = Query(...),
     role_id: int = Query(...),
     repo: IDeptRoleLimitRepository = Depends(get_dept_role_limit_repository),
-    _: User = Depends(require_roles("admin", "super Admin")),
+    _: User = Depends(require_roles("admin", "super Admin", "nodal Officer")),
 ):
     return {"active_count": repo.count_active_users(dept_id, role_id)}
 
