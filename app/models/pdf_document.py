@@ -64,4 +64,8 @@ class PDFDocument(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
+    # Auto-updated by a DB trigger (trg_pdf_documents_modified_on) on every
+    # UPDATE to this row, regardless of which stored procedure made the
+    # change — so it doesn't need to be set explicitly anywhere in Python.
+    modified_on: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 

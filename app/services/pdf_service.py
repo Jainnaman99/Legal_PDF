@@ -322,10 +322,10 @@ class PDFService:
             raise FileNotFoundError(f"Document {document_id} not found.")
         if doc.uploaded_by != user_id:
             raise PermissionError("Not authorised to modify this document.")
-        if doc.status not in ("pending", "rejected"):
-            raise ValueError("File replacement is only allowed for pending or rejected documents.")
-        if resubmit and doc.status != "rejected":
-            raise ValueError("Resubmit is only allowed for rejected documents.")
+        if doc.status not in ("pending", "rejected", "returned"):
+            raise ValueError("File replacement is only allowed for pending, rejected, or returned documents.")
+        if resubmit and doc.status not in ("rejected", "returned"):
+            raise ValueError("Resubmit is only allowed for rejected or returned documents.")
 
         file_path = os.path.join(settings.UPLOAD_DIR, file_ref)
         if not os.path.exists(file_path):

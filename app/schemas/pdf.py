@@ -212,6 +212,7 @@ class PDFUploadResponse(BaseModel):
     summary: Optional[str] = None
     uploaded_by: int
     created_at: datetime
+    modified_on: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
 
@@ -266,6 +267,7 @@ class PDFListItem(BaseModel):
     summary: Optional[str] = None
     uploaded_by: int
     created_at: datetime
+    modified_on: Optional[datetime] = None
     uploader_username: Optional[str] = None
     uploader_first_name: Optional[str] = None
     uploader_last_name: Optional[str] = None
@@ -281,6 +283,7 @@ class PDFListResponse(BaseModel):
     count_approved: Optional[int] = None
     count_rejected: Optional[int] = None
     count_draft: Optional[int] = None
+    count_returned: Optional[int] = None
 
 
 # ── Department linking ────────────────────────────────────────

@@ -396,8 +396,15 @@ def update_document(
         r in (current_user.role.name if current_user.role else "") for r in ("admin", "super Admin")
     ):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorised to edit this document")
+    if doc.status == "approved":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Document is approved and locked for editing. Ask an approver to request an unlock.",
+        )
+    if doc.status == "deleted":
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Document has been deleted.")
 
-    was_rejected_or_draft = doc.status in ("rejected", "draft")
+    was_resubmittable = doc.status in ("rejected", "draft", "returned")
     updated = service.update_document(
         document_id=document_id,
         tag_ids=body.tag_ids,
@@ -435,7 +442,7 @@ def update_document(
         is_repealed=body.is_repealed,
         last_updated_on=body.last_updated_on,
     )
-    if body.resubmit and was_rejected_or_draft:
+    if body.resubmit and was_resubmittable:
         service.resubmit_document(document_id)
         if updated:
             updated.status = "pending"

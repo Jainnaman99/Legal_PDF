@@ -40,6 +40,10 @@ class IPDFRepository(ABC):
         ...
 
     @abstractmethod
+    def set_status(self, document_id: int, status: str) -> None:
+        ...
+
+    @abstractmethod
     def update(
         self,
         document_id: int,

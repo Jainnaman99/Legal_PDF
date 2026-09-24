@@ -209,7 +209,7 @@ class PDFRepository(IPDFRepository):
 
     def resubmit_document(self, document_id: int) -> None:
         self._db.execute(
-            text("UPDATE pdf_documents SET status='pending' WHERE id=:id AND status IN ('rejected','draft')"),
+            text("UPDATE pdf_documents SET status='pending' WHERE id=:id AND status IN ('rejected','draft','returned')"),
             {"id": document_id},
         )
         self._db.execute(
@@ -235,6 +235,13 @@ class PDFRepository(IPDFRepository):
         row = result.mappings().fetchone()
         return self._map_row(row) if row else None
 
+    def set_status(self, document_id: int, status: str) -> None:
+        self._db.execute(
+            text("UPDATE pdf_documents SET status = :status WHERE id = :id"),
+            {"status": status, "id": document_id},
+        )
+        self._db.commit()
+
     def list_by_user(self, user_id: int, skip: int = 0, limit: int = 100, status: Optional[str] = None) -> tuple[int, list[PDFDocument], dict]:
         result = self._db.execute(
             text("CALL sp_list_pdfs_by_user(:user_id, :skip, :limit, :status)"),
@@ -248,6 +255,7 @@ class PDFRepository(IPDFRepository):
             "count_approved": int(rows[0]["count_approved"]) if rows else 0,
             "count_rejected": int(rows[0]["count_rejected"]) if rows else 0,
             "count_draft":    int(rows[0]["count_draft"])    if rows else 0,
+            "count_returned": int(rows[0]["count_returned"]) if rows else 0,
         }
         return total, [self._map_row(row) for row in rows], counts
 
@@ -580,6 +588,7 @@ class PDFRepository(IPDFRepository):
             last_updated_on=d.get("last_updated_on"),
             uploaded_by=d["uploaded_by"],
             created_at=d["created_at"],
+            modified_on=d.get("modified_on"),
         )
         doc.department_name = d.get("department_name")
         doc.document_type_name = d.get("document_type_name")

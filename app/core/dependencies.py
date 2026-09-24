@@ -20,6 +20,7 @@ from app.interfaces.pdf_repository import IPDFRepository
 from app.interfaces.reset_otp_repository import IResetOtpRepository
 from app.interfaces.role_repository import IRoleRepository
 from app.interfaces.tag_repository import ITagRepository
+from app.interfaces.unlock_request_repository import IUnlockRequestRepository
 from app.interfaces.user_repository import IUserRepository
 from app.models.user import User
 from app.repositories.act_parts_repository import ActPartsRepository
@@ -38,6 +39,7 @@ from app.repositories.pdf_repository import PDFRepository
 from app.repositories.reset_otp_repository import ResetOtpRepository
 from app.repositories.role_repository import RoleRepository
 from app.repositories.tag_repository import TagRepository
+from app.repositories.unlock_request_repository import UnlockRequestRepository
 from app.repositories.user_repository import UserRepository
 from app.services.act_parts_service import ActPartsService
 from app.services.act_structure_service import ActStructureService
@@ -104,6 +106,10 @@ def get_dept_role_limit_repository(db: Session = Depends(get_db)) -> IDeptRoleLi
 
 def get_cap_request_repository(db: Session = Depends(get_db)) -> ICapRequestRepository:
     return CapRequestRepository(db)
+
+
+def get_unlock_request_repository(db: Session = Depends(get_db)) -> IUnlockRequestRepository:
+    return UnlockRequestRepository(db)
 
 
 def get_auth_service(

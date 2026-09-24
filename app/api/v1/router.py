@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.v1 import act_parts, act_structure, admin_auth, audit, auth, cap_requests, citizen, department, dept_role_limits, document_type, pdf, role, tag, user
+from app.api.v1 import act_parts, act_structure, admin_auth, audit, auth, cap_requests, citizen, department, dept_role_limits, document_type, pdf, role, tag, unlock_requests, user
 
 router = APIRouter(prefix="/api/v1")
 router.include_router(citizen.router)
@@ -17,3 +17,4 @@ router.include_router(act_structure.router)
 router.include_router(act_parts.router)
 router.include_router(dept_role_limits.router)
 router.include_router(cap_requests.router)
+router.include_router(unlock_requests.router)
