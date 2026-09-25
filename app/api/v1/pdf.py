@@ -243,18 +243,25 @@ def get_annotation_draft(
 def list_documents_for_approver(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=1000),
-    status: Optional[str] = Query(None, description="Filter by status: pending | approved | rejected"),
+    status: Optional[str] = Query(None, description="Filter by status: pending | approved | rejected | deleted"),
+    document_type_name: Optional[str] = Query(None, description="Exact match against document type name"),
+    search: Optional[str] = Query(None, description="Substring match against document name or original filename"),
     current_user: User = Depends(_approver_roles),
     service: PDFService = Depends(get_pdf_service),
 ):
-    if status and status not in ("pending", "approved", "rejected"):
+    if status and status not in ("pending", "approved", "rejected", "deleted"):
         raise HTTPException(
             status_code=400,
-            detail="status must be one of: pending, approved, rejected",
+            detail="status must be one of: pending, approved, rejected, deleted",
         )
     role_name = current_user.role.name if current_user.role else ""
     approver_filter = current_user.id if role_name == "approver" else None
-    total, documents, counts = service.list_all_documents(skip, limit, status, approver_id=approver_filter)
+    total, documents, counts = service.list_all_documents(
+        skip, limit, status,
+        approver_id=approver_filter,
+        document_type_name=document_type_name,
+        search=search,
+    )
     return PDFListResponse(total=total, documents=documents, **counts)
 
 
@@ -370,15 +377,23 @@ def list_docs_by_my_department_and_type(
 def list_all_docs_by_my_department(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=1000),
-    status: Optional[str] = Query(None, description="Filter by status: pending | approved | rejected"),
+    status: Optional[str] = Query(None, description="Filter by status: pending | approved | rejected | deleted"),
+    uploader_id: Optional[int] = Query(None, description="Exact match against uploader user id (the dropdown's value)"),
+    approver_id: Optional[int] = Query(None, description="Exact match against the latest approver's user id (the dropdown's value)"),
+    search: Optional[str] = Query(None, description="Substring match against document name or original filename"),
     current_user: User = Depends(get_current_user),
     service: PDFService = Depends(get_pdf_service),
 ):
     if not current_user.department_id:
         raise HTTPException(status_code=400, detail="Your account has no department assigned")
-    if status and status not in _VALID_STATUSES:
-        raise HTTPException(status_code=400, detail="status must be one of: pending, approved, rejected")
-    total, documents, counts = service.list_by_department(current_user.department_id, skip, limit, status)
+    if status and status not in ("pending", "approved", "rejected", "deleted"):
+        raise HTTPException(status_code=400, detail="status must be one of: pending, approved, rejected, deleted")
+    total, documents, counts = service.list_by_department(
+        current_user.department_id, skip, limit, status,
+        uploader_id=uploader_id,
+        approver_id=approver_id,
+        search=search,
+    )
     return PDFListResponse(total=total, documents=documents, **counts)
 
 
@@ -505,7 +520,7 @@ def list_all_documents(
 def list_all_documents_super_admin(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=1000),
-    status: Optional[str] = Query(None, description="Filter by status: pending | approved | rejected"),
+    status: Optional[str] = Query(None, description="Filter by status: pending | approved | rejected | deleted"),
     department_id: Optional[int] = Query(None, description="Exact match against department id (the dropdown's value)"),
     uploader_id: Optional[int] = Query(None, description="Exact match against uploader user id (the dropdown's value)"),
     approver_id: Optional[int] = Query(None, description="Exact match against the latest approver's user id (the dropdown's value)"),
@@ -513,14 +528,47 @@ def list_all_documents_super_admin(
     current_user: User = Depends(_super_admin),
     service: PDFService = Depends(get_pdf_service),
 ):
-    if status and status not in ("pending", "approved", "rejected"):
+    if status and status not in ("pending", "approved", "rejected", "deleted"):
         raise HTTPException(
             status_code=400,
-            detail="status must be one of: pending, approved, rejected",
+            detail="status must be one of: pending, approved, rejected, deleted",
         )
     total, documents, counts = service.list_all_documents_super_admin(
         skip, limit, status,
         department_id=department_id,
+        uploader_id=uploader_id,
+        approver_id=approver_id,
+        document_name_starts_with=document_name_starts_with,
+    )
+    return PDFListResponse(total=total, documents=documents, **counts)
+
+
+@router.get(
+    "/admin/all",
+    response_model=PDFListResponse,
+    summary="Admin — all documents (own department if assigned, else system-wide), with server-side filters",
+)
+def list_all_documents_admin(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=1000),
+    status: Optional[str] = Query(None, description="Filter by status: pending | approved | rejected | deleted"),
+    uploader_id: Optional[int] = Query(None, description="Exact match against uploader user id (the dropdown's value)"),
+    approver_id: Optional[int] = Query(None, description="Exact match against the latest approver's user id (the dropdown's value)"),
+    document_name_starts_with: Optional[str] = Query(None, description="Prefix match against document name"),
+    current_user: User = Depends(require_roles("admin")),
+    service: PDFService = Depends(get_pdf_service),
+):
+    if status and status not in ("pending", "approved", "rejected", "deleted"):
+        raise HTTPException(
+            status_code=400,
+            detail="status must be one of: pending, approved, rejected, deleted",
+        )
+    # Scoped server-side from the token, same as Nodal's /my-department/all —
+    # an admin with no department assigned sees every department (mirrors the
+    # previous client-side `user?.dept ? filter(...) : everything` behaviour).
+    total, documents, counts = service.list_all_documents_super_admin(
+        skip, limit, status,
+        department_id=current_user.department_id,
         uploader_id=uploader_id,
         approver_id=approver_id,
         document_name_starts_with=document_name_starts_with,

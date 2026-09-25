@@ -239,8 +239,21 @@ class PDFService:
     def list_my_documents(self, user_id: int, skip: int = 0, limit: int = 100, status: Optional[str] = None) -> tuple[int, list[PDFDocument], dict]:
         return self._pdf_repo.list_by_user(user_id, skip, limit, status)
 
-    def list_all_documents(self, skip: int = 0, limit: int = 100, status: Optional[str] = None, approver_id: Optional[int] = None) -> tuple[int, list[PDFDocument], dict]:
-        return self._pdf_repo.list_all(skip, limit, status, approver_id=approver_id)
+    def list_all_documents(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        status: Optional[str] = None,
+        approver_id: Optional[int] = None,
+        document_type_name: Optional[str] = None,
+        search: Optional[str] = None,
+    ) -> tuple[int, list[PDFDocument], dict]:
+        return self._pdf_repo.list_all(
+            skip, limit, status,
+            approver_id=approver_id,
+            document_type_name=document_type_name,
+            search=search,
+        )
 
     def list_all_documents_super_admin(
         self,
@@ -295,8 +308,22 @@ class PDFService:
     def list_acts_by_department(self, dept_ids: str, skip: int, limit: int, status: Optional[str]) -> tuple[int, list]:
         return self._pdf_repo.list_acts_by_department(dept_ids, skip, limit, status)
 
-    def list_by_department(self, dept_ids: str, skip: int, limit: int, status: Optional[str]) -> tuple[int, list, dict]:
-        return self._pdf_repo.list_by_department(dept_ids, skip, limit, status)
+    def list_by_department(
+        self,
+        dept_ids: str,
+        skip: int,
+        limit: int,
+        status: Optional[str],
+        uploader_id: Optional[int] = None,
+        approver_id: Optional[int] = None,
+        search: Optional[str] = None,
+    ) -> tuple[int, list, dict]:
+        return self._pdf_repo.list_by_department(
+            dept_ids, skip, limit, status,
+            uploader_id=uploader_id,
+            approver_id=approver_id,
+            search=search,
+        )
 
     def list_docs_by_dept_and_type(self, dept_ids: str, doc_type_id: int, skip: int, limit: int, status: Optional[str]) -> tuple[int, list]:
         return self._pdf_repo.list_docs_by_dept_and_type(dept_ids, doc_type_id, skip, limit, status)

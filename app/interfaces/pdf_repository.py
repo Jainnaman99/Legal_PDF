@@ -87,7 +87,15 @@ class IPDFRepository(ABC):
         ...
 
     @abstractmethod
-    def list_all(self, skip: int = 0, limit: int = 100, status: Optional[str] = None, approver_id: Optional[int] = None) -> tuple[int, list[PDFDocument], dict]:
+    def list_all(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        status: Optional[str] = None,
+        approver_id: Optional[int] = None,
+        document_type_name: Optional[str] = None,
+        search: Optional[str] = None,
+    ) -> tuple[int, list[PDFDocument], dict]:
         ...
 
     @abstractmethod
@@ -164,7 +172,16 @@ class IPDFRepository(ABC):
         ...
 
     @abstractmethod
-    def list_by_department(self, dept_ids: str, skip: int, limit: int, status: Optional[str]) -> tuple[int, list[PDFDocument], dict]:
+    def list_by_department(
+        self,
+        dept_ids: str,
+        skip: int,
+        limit: int,
+        status: Optional[str],
+        uploader_id: Optional[int] = None,
+        approver_id: Optional[int] = None,
+        search: Optional[str] = None,
+    ) -> tuple[int, list[PDFDocument], dict]:
         ...
 
     @abstractmethod

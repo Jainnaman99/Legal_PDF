@@ -284,6 +284,7 @@ class PDFListResponse(BaseModel):
     count_rejected: Optional[int] = None
     count_draft: Optional[int] = None
     count_returned: Optional[int] = None
+    count_deleted: Optional[int] = None
 
 
 # ── Department linking ────────────────────────────────────────
