@@ -294,6 +294,7 @@ class PDFRepository(IPDFRepository):
             "count_approved": int(stats_row["count_approved"]) if stats_row else 0,
             "count_rejected": int(stats_row["count_rejected"]) if stats_row else 0,
             "count_deleted":  int(stats_row["count_deleted"])  if stats_row else 0,
+            "assigned_uploader_count": int(stats_row.get("assigned_uploader_count") or 0) if stats_row else 0,
         }
         return total, documents, counts
 
