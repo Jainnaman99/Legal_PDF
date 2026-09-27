@@ -320,11 +320,17 @@ def search_pdfs(
 def list_my_documents(
     skip: int = Query(0, ge=0),
     limit: int = Query(500, ge=1, le=1000),
-    status: Optional[str] = Query(None, description="Filter by status: pending | approved | rejected | draft"),
+    status: Optional[str] = Query(None, description="Filter by status: pending | approved | rejected | draft | returned | deleted"),
+    document_type_name: Optional[str] = Query(None, description="Exact match against document type name"),
+    search: Optional[str] = Query(None, description="Substring match against document name or original filename"),
     current_user: User = Depends(get_current_user),
     service: PDFService = Depends(get_pdf_service),
 ):
-    total, documents, counts = service.list_my_documents(current_user.id, skip, limit, status)
+    total, documents, counts = service.list_my_documents(
+        current_user.id, skip, limit, status,
+        document_type_name=document_type_name,
+        search=search,
+    )
     return PDFListResponse(total=total, documents=documents, **counts)
 
 

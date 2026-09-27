@@ -83,7 +83,15 @@ class IPDFRepository(ABC):
         ...
 
     @abstractmethod
-    def list_by_user(self, user_id: int, skip: int = 0, limit: int = 100, status: Optional[str] = None) -> tuple[int, list[PDFDocument], dict]:
+    def list_by_user(
+        self,
+        user_id: int,
+        skip: int = 0,
+        limit: int = 100,
+        status: Optional[str] = None,
+        document_type_name: Optional[str] = None,
+        search: Optional[str] = None,
+    ) -> tuple[int, list[PDFDocument], dict]:
         ...
 
     @abstractmethod

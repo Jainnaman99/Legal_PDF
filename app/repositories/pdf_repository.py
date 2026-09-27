@@ -242,22 +242,45 @@ class PDFRepository(IPDFRepository):
         )
         self._db.commit()
 
-    def list_by_user(self, user_id: int, skip: int = 0, limit: int = 100, status: Optional[str] = None) -> tuple[int, list[PDFDocument], dict]:
+    def list_by_user(
+        self,
+        user_id: int,
+        skip: int = 0,
+        limit: int = 100,
+        status: Optional[str] = None,
+        document_type_name: Optional[str] = None,
+        search: Optional[str] = None,
+    ) -> tuple[int, list[PDFDocument], dict]:
         result = self._db.execute(
-            text("CALL sp_list_pdfs_by_user(:user_id, :skip, :limit, :status)"),
-            {"user_id": user_id, "skip": skip, "limit": limit, "status": status},
+            text("CALL sp_list_pdfs_by_user(:user_id, :skip, :limit, :status, :document_type_name, :search)"),
+            {
+                "user_id": user_id,
+                "skip": skip,
+                "limit": limit,
+                "status": status,
+                "document_type_name": document_type_name,
+                "search": search,
+            },
         )
         rows = result.mappings().fetchall()
-        total = rows[0]["total_count"] if rows else 0
+        total = int(rows[0]["total_count"]) if rows else 0
+        documents = [self._map_row(row) for row in rows if row.get("id") is not None]
+
+        stats_result = self._db.execute(
+            text("CALL sp_get_uploader_doc_stats(:user_id)"),
+            {"user_id": user_id},
+        )
+        stats_row = stats_result.mappings().fetchone()
         counts = {
-            "count_total":    int(rows[0]["count_total"])    if rows else 0,
-            "count_pending":  int(rows[0]["count_pending"])  if rows else 0,
-            "count_approved": int(rows[0]["count_approved"]) if rows else 0,
-            "count_rejected": int(rows[0]["count_rejected"]) if rows else 0,
-            "count_draft":    int(rows[0]["count_draft"])    if rows else 0,
-            "count_returned": int(rows[0]["count_returned"]) if rows else 0,
+            "count_total":    int(stats_row["count_total"])    if stats_row else 0,
+            "count_pending":  int(stats_row["count_pending"])  if stats_row else 0,
+            "count_approved": int(stats_row["count_approved"]) if stats_row else 0,
+            "count_rejected": int(stats_row["count_rejected"]) if stats_row else 0,
+            "count_draft":    int(stats_row["count_draft"])    if stats_row else 0,
+            "count_returned": int(stats_row["count_returned"]) if stats_row else 0,
+            "count_deleted":  int(stats_row["count_deleted"])  if stats_row else 0,
         }
-        return total, [self._map_row(row) for row in rows], counts
+        return total, documents, counts
 
     def list_all(
         self,
