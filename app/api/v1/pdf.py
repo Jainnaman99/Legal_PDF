@@ -1,5 +1,6 @@
 import os
 from typing import Optional
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import FileResponse, Response
@@ -866,10 +867,21 @@ def get_pdf_file(
         if pdf_bytes:
             original = doc.original_filename or "document"
             pdf_name = os.path.splitext(original)[0] + ".pdf"
+            # HTTP headers must be Latin-1 encodable — a filename containing
+            # non-ASCII characters (e.g. Hindi) raised UnicodeEncodeError when
+            # embedded directly. Mirror Starlette's own FileResponse behavior
+            # (see its content-disposition handling in starlette/responses.py):
+            # percent-encode and use the RFC 6266 filename*=utf-8'' form
+            # whenever the name isn't already plain ASCII.
+            quoted_name = quote(pdf_name)
+            content_disposition = (
+                f'inline; filename="{pdf_name}"' if quoted_name == pdf_name
+                else f"inline; filename*=utf-8''{quoted_name}"
+            )
             return Response(
                 content=pdf_bytes,
                 media_type="application/pdf",
-                headers={"Content-Disposition": f'inline; filename="{pdf_name}"'},
+                headers={"Content-Disposition": content_disposition},
             )
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
